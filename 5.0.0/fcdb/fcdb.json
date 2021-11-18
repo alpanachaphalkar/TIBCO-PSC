@@ -1,0 +1,69 @@
+{
+	"apiVersion": "apps/v1",
+	"kind": "Deployment",
+	"metadata": {
+		"name": "fc-db-postgresql-deployment",
+		"namespace": "tibco-fc-500",
+		"labels": {
+			"app": "fc",
+			"tier": "db",
+			"version": "5.0.0",
+			"release" : "stable",
+			"environment" : "production"
+		}
+	},
+	"spec": {
+		"selector": {
+			"matchLabels": {
+				"app": "fc",
+				"tier": "db"
+			}
+		},
+		"strategy": {
+			"type": "Recreate"
+		},
+		"template": {
+			"metadata": {
+				"labels": {
+					"app": "fc",
+					"tier": "db"
+				}
+			},
+			"spec": {
+				"containers": [
+					{
+						"image": "<docker registry url for image with tag version>",
+						"name": "postgres",
+						"resources": {
+							"requests": {
+									"memory": "512Mi",
+									"cpu": "500m"
+							},
+							"limits": {
+									"memory": "2048Mi",
+									"cpu": "1000m"
+							}
+						},
+						"ports": [
+							{
+								"containerPort": 5432,
+								"name": "postgresqlport"
+							}
+						]
+					}
+				],  
+				"restartPolicy": "Always",
+				"imagePullSecrets": [
+				  {
+					"name": "name of registry credentials created to pull images"
+				  }
+				],
+				"securityContext":
+				{
+					"runAsNonRoot": true,
+					"runAsUser": 999
+				}
+			}
+		}
+	}
+}

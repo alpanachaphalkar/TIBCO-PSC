@@ -1,0 +1,64 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "fc-ems-deployment",
+    "namespace": "tibco-fc-500",
+    "labels": {
+      "app": "fc",
+      "tier": "ems",
+      "version": "5.0.0",
+      "release": "stable",
+      "environment": "production"
+    }
+  },
+  "spec": {
+    "selector": {
+      "matchLabels": {
+        "app": "fc",
+        "tier": "ems"
+      }
+    },
+    "strategy": {
+      "type": "Recreate"
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "fc",
+          "tier": "ems"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "image": "<docker registry url for ems image>",
+            "name": "fc-ems",
+			"resources": {
+                "requests": {
+                        "memory": "512Mi",
+                        "cpu": "250m"
+                },
+                "limits": {
+                        "memory": "2048Mi",
+                        "cpu": "500m"
+                }
+			},
+            "ports": [
+              {
+                "containerPort": 7222,
+                "name": "emsport"
+              }
+            ]
+          }
+        ],
+        "restartPolicy": "Always",
+        "imagePullSecrets": [
+          {
+            "name": "name of registry credentials created to pull images"
+          }
+        ]
+      }
+    }
+  }
+}

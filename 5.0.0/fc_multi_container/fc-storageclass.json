@@ -1,0 +1,17 @@
+{
+	"kind": "StorageClass",
+	"apiVersion": "storage.k8s.io/v1",
+	"metadata": {
+		"name": "fc-storage",
+		"namespace":"tibco-fc-500",
+		"labels": {
+			"app": "fc",
+			"tier": "storage",
+			"version": "5.0.0",
+			"release": "stable",
+			"environment": "production"
+		}
+	},
+	"provisioner": "kubernetes.io/no-provisioner",
+	"volumeBindingMode": "Immediate"
+}

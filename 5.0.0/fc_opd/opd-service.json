@@ -1,0 +1,30 @@
+{
+   "apiVersion": "v1",
+   "kind": "Service",
+   "metadata": {
+      "name": "opd-service",
+	  "namespace":"tibco-fc-500",
+	  "labels": {
+		"app": "fc",
+		"tier": "opd",
+		"version": "5.0.0",
+		"release" : "stable",
+		"environment" : "production"
+     }
+   },
+   "spec": {
+      "selector": {
+         "app": "fc",
+         "tier": "opd"
+      },
+      "type": "LoadBalancer",
+      "ports": [
+         {
+            "name": "http-opd",
+            "protocol": "TCP",
+            "port": 8070,
+            "targetPort": 8070
+         }
+      ]
+   }
+}

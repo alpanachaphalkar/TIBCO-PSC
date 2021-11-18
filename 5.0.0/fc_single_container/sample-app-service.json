@@ -1,0 +1,41 @@
+{
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {
+                "name": "sample-app-fc-service",
+                "labels": {
+                        "k8s-app": "sampleapp",
+                        "application-ID": "fc",
+                        "version": "5.0.0",
+                        "release": "stable",
+                        "environment": "production"
+                }
+        },
+        "spec": {
+                "selector": {
+                        "k8s-app": "sampleapp",
+                        "application-ID": "fc"
+                },
+                "type": "LoadBalancer",
+                "externalIPs": [<ip address of worker node on which app is deployed>],
+                "ports": [{
+                                "name": "fchttp",
+                                "protocol": "TCP",
+                                "port": 9080,
+                                "targetPort": 8080
+                        },
+                        {
+                                "name": "confighttp",
+                                "protocol": "TCP",
+                                "port": 6080,
+                                "targetPort": 6080
+                        },
+                        {
+                                "name": "opdhttp",
+                                "protocol": "TCP",
+                                "port": 8070,
+                                "targetPort": 8070
+                        }
+                ]
+        }
+}

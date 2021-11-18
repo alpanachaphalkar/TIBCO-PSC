@@ -1,0 +1,75 @@
+{
+  "kind": "Deployment",
+  "apiVersion": "extensions/v1beta1",
+  "metadata": {
+    "name": "sampleapp",
+    "labels": {
+      "k8s-app": "sampleapp",
+	  "application-ID": "fc",
+      "version": "5.0.0",
+      "release" : "stable",
+      "environment" : "production"
+    }
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "k8s-app": "sampleapp",
+		"application-ID": "fc"
+      }
+    },
+    "template": {
+      "metadata": {
+        "name": "sampleapp",
+        "labels": {
+          "k8s-app": "sampleapp",
+		  "application-ID": "fc"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "sampleapp",
+            "image": "docker registry url for image with tag version",
+			"resources": {
+                "requests": {
+                        "memory": "1024Mi",
+                        "cpu": "500m"
+                },
+                "limits": {
+                        "memory": "4096Mi",
+                        "cpu": "2000m"
+                }
+			},
+			"ports": [
+                {
+                    "containerPort": 8080,
+                    "name": "fcport"
+                },
+				{
+                    "containerPort": 6080,
+                    "name": "configport"
+                },
+				{
+                    "containerPort": 8070,
+                    "name": "opdport"
+                }
+			 ]
+          }
+        ],
+        "restartPolicy": "Always",
+        "imagePullSecrets": [
+          {
+            "name": "name of registry credentials created to pull images"
+          }
+        ],
+		"securityContext":
+        {
+			"runAsNonRoot": true,
+			"runAsUser" : 70
+        }
+      }
+    }
+  }
+}

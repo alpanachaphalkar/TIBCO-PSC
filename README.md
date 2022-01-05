@@ -1,4 +1,13 @@
-# TIBCO Product & Service Catalog
-This repository is used to version control the docker image of TIBCO PSC. 
+# TIBCO PSC AC_HOME SAMPLES DATA
+Inside Bastion Host
 
-Documentation: [Docker Image Build Locally: TIBCO PSC 5.0.0](https://sky.atlassian.net/wiki/spaces/CRM/pages/2078344150/Docker+Image+Build+Locally+TIBCO+PSC+5.0.0)
+```
+mkdir samples
+cd samples
+kubectl -n psc cp psc-deployment-6fd46bc46-l88xc:home/postgres/tibco/mdm/9.1/plugins/ac/5.0/samples .
+```
+
+Then on local system,
+```
+gcloud compute scp --recurse de-fo-ce-vm-bastion-tibco:/home/ALCH390/samples .
+```

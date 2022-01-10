@@ -6,6 +6,14 @@
 #
 
 #How to Build the FC docker image  :
+
+#If  you are using the ORACLE as database then create ORACLE driver jboss module
+1. Copy the ojdbc driver ojdbc8.jar to JBModules/modules/system/layers/base/com/oracle/main directory.
+2. Edit JBModules/modules/system/layers/base/com/oracle/main/module.xml and uncomment the <!--resource-root path="ojdbc8.jar"/--> xml element, specify exact name of jar in path attribute. 
+
+#Create EMS module in JBOSS
+1. Copy the tibjms.jar to JBModules/modules/system/layers/base/com/tibco/mdm/main directory.
+
 docker build -t fc:5.0.0 --build-arg MDM_VERSION=9.1.0 --build-arg MDM_MAJOR_VERSION=9.1 --build-arg FC_VERSION=5.0.0 --build-arg FC_MAJOR_VERSION=5.0 --build-arg  MDM_HOTFIX_VERSION=hotfix06  --rm=true .
 
 #How to Run the FC docker image locally  :

@@ -30,7 +30,7 @@ MAINTAINER Arun Singh <arusingh@tibco.com>
 
 ARG USER_HOME=/home/tibco
 ARG ANT_CONTRIB_VERSION=1.0b3
-ARG ANT_VERSION=1.10.11
+ARG ANT_VERSION=1.10.7
 #other ENV
 
 ENV ANT_HOME=/etc/ant-${ANT_VERSION} \
@@ -52,22 +52,20 @@ RUN apk -U upgrade && \
     /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib && \
     unset GLIBC_REPO \
     && cd /tmp \
-    && curl -sS -o apache-ant-${ANT_VERSION}-bin.tar.gz https://downloads.apache.org/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
+    && curl -sS -o apache-ant-${ANT_VERSION}-bin.tar.gz http://www.us.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
     && mkdir ant-${ANT_VERSION} \
     && tar -zxvf apache-ant-${ANT_VERSION}-bin.tar.gz \
     && mv apache-ant-${ANT_VERSION} ${ANT_HOME} \
     && rm apache-ant-${ANT_VERSION}-bin.tar.gz \
     && rm -rf ant-${ANT_VERSION} \
     && rm -rf ${ANT_HOME}/manual \
-    && unset ANT_VERSION
-
-RUN cd /tmp \
-	&& wget -O ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip https://sourceforge.net/projects/ant-contrib/files/ant-contrib/${ANT_CONTRIB_VERSION}/ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip
-
-RUN unzip -d /tmp /tmp/ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip  \
-    && cp /tmp/ant-contrib/ant-contrib-${ANT_CONTRIB_VERSION}.jar ${ANT_HOME}/lib/ant-contrib.jar \
-    && rm -rf /tmp/ant-contrib \
-    && rm /tmp/ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
+    && unset ANT_VERSION \
+    && cd /tmp \
+	&& curl -sS -o ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip http://kent.dl.sourceforge.net/project/ant-contrib/ant-contrib/${ANT_CONTRIB_VERSION}/ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
+    && unzip ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip -d /tmp/ \
+    && cp ant-contrib/ant-contrib-${ANT_CONTRIB_VERSION}.jar ${ANT_HOME}/lib/ant-contrib.jar \
+    && rm -rf ant-contrib \
+    && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION \
     && apk --no-cache add netcat-openbsd zip && \
     ln -s /usr/bin/nc /usr/bin/netcat && \

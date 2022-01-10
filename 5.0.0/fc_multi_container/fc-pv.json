@@ -1,0 +1,47 @@
+{
+	"apiVersion": "v1",
+	"kind": "PersistentVolume",
+	"metadata": {
+		"name": "fc-pv",
+		"namespace":"tibco-fc-500",
+		"labels": {
+			"app": "fc",
+			"tier": "pv",
+			"version": "5.0.0",
+			"release": "stable",
+			"environment": "production"
+		}
+	},
+	"spec": {
+		"capacity": {
+			"storage": "10Gi"
+		},
+		"accessModes": [
+			"ReadWriteOnce"
+		],
+		"persistentVolumeReclaimPolicy": "Retain",
+		"storageClassName": "fc-storage",
+		"hostPath": {
+			"path": "<Give path for mounting>",
+			"type": "DirectoryOrCreate"
+		},
+		"nodeAffinity": {
+			"required": {
+				"nodeSelectorTerms": [
+					{
+						"matchExpressions": [
+							{
+								"key": "kubernetes.io/hostname",
+								"operator": "In",
+								"values": [
+									"Name of worker node",
+									"k8s-master"
+								]
+							}
+						]
+					}
+				]
+			}
+		}
+	}
+}

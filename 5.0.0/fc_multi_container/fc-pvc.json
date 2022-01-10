@@ -1,0 +1,26 @@
+{
+	"apiVersion": "v1",
+	"kind": "PersistentVolumeClaim",
+	"metadata": {
+		"name": "fc-pv-claim",
+		"namespace":"tibco-fc-500",
+		"labels": {
+			"app": "fc",
+			"tier": "pvc",
+			"version": "5.0.0",
+			"release": "stable",
+			"environment": "production"
+		}
+	},
+	"spec": {
+		"accessModes": [
+			"ReadWriteOnce"
+		],
+		"storageClassName": "fc-storage",
+		"resources": {
+			"requests": {
+				"storage": "10Gi"
+			}
+		}
+	}
+}

@@ -1,0 +1,13 @@
+{
+  "kind": "Namespace",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "tibco-fc-500",
+    "labels": {
+      "name": "tibco-fc-500",
+      "version": "5.0.0",
+      "release" : "stable",
+      "environment" : "production"
+    }
+  }
+}

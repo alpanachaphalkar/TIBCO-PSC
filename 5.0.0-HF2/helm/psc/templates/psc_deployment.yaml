@@ -54,41 +54,6 @@ spec:
         volumeMounts:
         - name: mq-storage
           mountPath: "/data"
-      {{- if eq .Values.extraEnv.INIT_FLAG true }}
-      - name: ems-configurator
-        image: "{{ .Values.image.registry }}/{{ .Values.ems.image.client.repository }}:{{ .Values.ems.image.client.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        env:
-        - name: INIT_FLAG
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Values.app.name }}-config
-              key: INIT_FLAG
-        - name: env_ems_svc
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Values.app.name }}-config
-              key: env_ems_svc
-        - name: env_ems_svc_port
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Values.app.name }}-config
-              key: env_ems_svc_port
-        - name: env_ems_user
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.app.name }}-secret
-              key: EMS_USER_NAME
-        - name: env_ems_password
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.app.name }}-secret
-              key: EMS_PASSWORD
-        terminationMessagePath: "/tmp/my-log"
-        volumeMounts:
-        - name: ems-script-vol
-          mountPath: "/opt/tibco/ems/8.6/custom/config_template"
-      {{- end }}
       containers:
       - name: fc
         image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -126,7 +91,7 @@ spec:
         {{- if .Values.psc.containers.readiness.enabled }}
         readinessProbe:
           httpGet:
-            path: "/eml/rest/base/jbossStatus"
+            path: "/eml/rest/v1/status/jbossStatus"
             port: 8080
           initialDelaySeconds: {{ .Values.psc.containers.readiness.initialDelaySeconds }}
           successThreshold: {{ .Values.psc.containers.readiness.successThreshold }}
@@ -137,7 +102,7 @@ spec:
         {{- if .Values.psc.containers.liveness.enabled }}
         livenessProbe:
           httpGet:
-            path: "/eml/rest/base/noOp"
+            path: "/eml/rest/v1/status/jbossStatus"
             port: 8080
           initialDelaySeconds: {{ .Values.psc.containers.liveness.initialDelaySeconds }}
           successThreshold: {{ .Values.psc.containers.liveness.successThreshold }}
@@ -154,11 +119,7 @@ spec:
           subPath: config
       restartPolicy: Always
       volumes:
-      {{- if eq .Values.extraEnv.INIT_FLAG true }}
-      - name: ems-script-vol
-        configMap:
-          name: {{ .Values.app.name }}-ems-client-script-config
-      {{- end }}
       - name: mq-storage
-        persistentVolumeClaim:
-          claimName: {{ .Values.app.name }}-pvc
+        hostPath:
+          path: "/home/docker/psc-local-storage-volume"
+          type: DirectoryOrCreate

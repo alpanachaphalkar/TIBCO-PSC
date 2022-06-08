@@ -6,16 +6,16 @@ extraEnv:
   MQ_NODE_TYPE: IGNITE_NODE
   MQ_ON_TROPOS: 'true'
   MQ_MDM_DB_TYPE: POSTGRES
-  MQ_MDM_DB_HOST: <db_hostname_or_ip>
-  MQ_MDM_DB_PORT: <db_port>
-  MQ_MDM_DB_NAME: <db_name>
-  MQ_MDM_DB_SCHEMA: <mdm_schema_name>
+  MQ_MDM_DB_HOST: postgres.psc-db.svc.cluster.local
+  MQ_MDM_DB_PORT: 5432
+  MQ_MDM_DB_NAME: 'velodb'
+  MQ_MDM_DB_SCHEMA: 'veloschema'
   MQ_MDM_DB_IGN_MIN_CONN_COUNT: 1
   MQ_MDM_DB_IGN_MAX_CONN_COUNT: 10
 
 secret:
-  MQ_MDM_DB_USER: <db_mdm_user_base64_encoded>
-  MQ_MDM_DB_USER_PWD: <db_mdm_user_base64_encoded>
+  MQ_MDM_DB_USER: bWRtdXNlcg==
+  MQ_MDM_DB_USER_PWD: bWRtcGFzc3dvcmQ=
 
 ignite:
   containers:
@@ -61,7 +61,7 @@ ignite:
 image:
   registry: eu.gcr.io/de-fo-gr-pr-shared/tibco
   repository: psc/ignite
-  pullPolicy: Always
+  pullPolicy: Never
   tag: 1.9.0-EB20210922
 
 serviceaccount:

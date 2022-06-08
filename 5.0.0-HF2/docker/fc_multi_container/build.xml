@@ -1,0 +1,717 @@
+<?xml version="1.0" ?> 
+<project name="FulfillmentCatalog" basedir="." default="build">
+    <description>Fulfillment Catalog</description>
+
+	<property name="sample.ent.name" value="FC500"/>
+	
+    <!-- import master build tasks -->
+	<target name="build" depends="clean">
+		<ant antfile="java/build.xml" target="build"/>
+	</target>
+
+	<target name="clean">
+		<ant antfile="java/build.xml" target="clean"/>
+	</target>
+	
+	
+	<target name="setjbossHome" if="${jboss.home.found}">
+		<property name="tmp.jboss.home" value="${env.JBOSS_HOME}"/>
+		<path id="tmp.jboss.home">
+			<pathelement location="${tmp.jboss.home}"/>
+		</path>
+		<pathconvert targetos="unix" property="tmp.jboss.home.esc" refid="tmp.jboss.home">
+			<map from="\\" to="/"/>
+		</pathconvert>
+	</target>
+	
+	<target name="setjbossHomeLocal" if="${jboss.home.found.local}">
+		<property name="tmp.jboss.home" value="${tibco.cim.home.esc}/bin/jboss-as-7.1.1.Final"/>
+		<path id="tmp.jboss.home">
+			<pathelement location="${tmp.jboss.home}"/>
+		</path>
+		<pathconvert targetos="unix" property="tmp.jboss.home.esc" refid="tmp.jboss.home">
+			<map from="\\" to="/"/>
+		</pathconvert>
+	</target>
+	
+	<target name="setNodeID" if="${isSingleNode}">
+		<property name="tmp.node.id" value="${node.id}"/>
+	</target>
+	
+	<target name="setNodeIDEnv" if="${isNodeIdEnvSet}">
+		<property name="tmp.node.id" value="${env.NODE_ID}"/>
+	</target>
+	
+	<target name="jboss.check1">
+		<condition property="jboss.home.found.local">
+			<and>
+				<not><isset property="env.JBOSS_HOME"/></not>	
+				<available file="${tibco.cim.home.esc}/bin/jboss-as-7.1.1.Final" type="dir"/>
+			</and>
+		</condition>
+	</target>
+	
+	<target name="jboss.check2">
+		<condition property="jboss.home.found">
+			<isset property="env.JBOSS_HOME"/>
+		</condition>
+	</target>
+	
+	<target name="jboss.check3">
+		<condition property="is.jboss.internal">
+				<available file="${tibco.cim.home.esc}/bin/jboss-as-7.1.1.Final" type="dir"/>
+		</condition>
+	</target>
+
+	<target name="node.id.check">
+		<xmlproperty file="${tibco.cim.home.esc}/config/ConfigValues.xml" />
+		<property name="node.id" value="${Configuration.Server(name)}"/>
+		 <condition property="isSingleNode">
+			<and>
+				<not>
+				    <matches pattern="," string="${node.id}" /> 		
+				</not>
+				<not>
+					<isset property="env.NODE_ID"/>
+				</not>
+			</and>
+		</condition>
+	</target>
+	
+	<target name="node.id.check.env">
+		 <condition property="isNodeIdEnvSet">
+			<isset property="env.NODE_ID"/>
+		</condition>
+	</target>
+	
+	
+	
+    <target name="initForInstaller">
+		<tstamp/>
+		<property environment="env"/>
+		<property name="tibco.cim.home" value="${env.MQ_HOME}"/>
+		<property name="tibco.ac.home" value="${env.AC_HOME}"/>
+		<property name="tibco.cim.common.dir" value="${env.MQ_COMMON_DIR}"/>
+		<property name="tibco.cim.log" value="${env.MQ_LOG}"/>
+		<property name="java.home" value="${env.JAVA_HOME}"/>
+		
+		<path id="tmp.cim.home">
+			<pathelement location="${tibco.cim.home}"/>
+		</path>
+		<path id="tmp.ac.home">
+			<pathelement location="${tibco.ac.home}"/>
+		</path>
+		<path id="tmp.cim.common.dir">
+			<pathelement location="${tibco.cim.common.dir}"/>
+		</path>
+		<path id="tmp.java.home">
+			<pathelement location="${java.home}"/>
+		</path>
+		<path id="tmp.cim.log">
+			<pathelement location="${tmp.cim.log}"/>
+		</path>
+		<pathconvert targetos="unix" property="tibco.cim.home.esc" refid="tmp.cim.home">
+			<map from="\\" to="/"/>
+		</pathconvert>
+		<pathconvert targetos="unix" property="tibco.ac.home.esc" refid="tmp.ac.home">
+			<map from="\\" to="/"/>
+		</pathconvert>
+		<pathconvert targetos="unix" property="tibco.cim.common.dir.esc" refid="tmp.cim.common.dir">
+			<map from="\\" to="/"/>
+		</pathconvert>
+		<pathconvert targetos="unix" property="tmp.cim.log.esc" refid="tmp.cim.log">
+			<map from="\\" to="/"/>
+		</pathconvert>
+		<pathconvert targetos="unix" property="java.home.esc" refid="tmp.java.home">
+			<map from="\\" to="/"/>
+		</pathconvert>
+		
+		<taskdef resource="net/sf/antcontrib/antcontrib.properties">
+			<classpath>
+				<pathelement location="${tibco.cim.home}/lib/external/ant-contrib-0.3.jar"/>
+			</classpath>
+		</taskdef>			
+		
+		<!--  Task definition for editing xml file -->
+		<taskdef name="xmltask"  classname="com.oopsconsultancy.xmltask.ant.XmlTask">   
+			<classpath path="${tibco.cim.home}/lib/external/xmltask.jar"/> 
+		</taskdef>	
+		
+		<echo message="PropertySet ... ${tibco.cim.home} ${java.home} ${tibco.ac.home} ${tibco.cim.common.dir}"/>
+    </target>
+	
+	<target name="setNodeIDAndJBOSSHOME" depends="jboss.check1,jboss.check2,jboss.check3,node.id.check,node.id.check.env,setNodeID,setNodeIDEnv,setjbossHome,setjbossHomeLocal"/>
+	
+    <target name="installerMergeFC" depends="initForInstaller,setNodeIDAndJBOSSHOME,installerMergeFCWindows, installerMergeFCNotWindows" >
+		<echo message="JBOSS_HOME=${tmp.jboss.home.esc}"/>
+	</target>
+
+    <target name="installerMergeFCWindows" if="isOSWindows" depends="checkAppServer,configureAS.ifJBOSS,configureAS.ifNotJBOSS">
+	    <property environment="env"/>
+        <echo message="merging FC resources to ${tibco.cim.home.esc}/ECM.ear"/>
+		<echo>This is a Windows machine.</echo>
+		<exec dir="${tibco.ac.home.esc}/bin" executable="cmd">
+			<env key="MQ_HOME" value="${tibco.cim.home.esc}"/>
+			<env key="AC_HOME" value="${tibco.ac.home.esc}"/>
+			<env key="MQ_COMMON_DIR" value="${tibco.cim.common.dir.esc}"/>
+			<env key="MQ_CONFIG_FILE" value="${tibco.cim.home.esc}/config/ConfigValues.xml"/>
+			<env key="MQ_LOG" value="${tibco.cim.home.esc}/log"/>
+			<env key="JBOSS_HOME" value="${tmp.jboss.home.esc}"/>
+			<env key="NODE_ID" value="${tmp.node.id}"/>
+			<arg value="/c"/>
+			<arg value="accustomutil.bat"/>
+		</exec>
+        <echo message="End merging FC resources to ${tibco.cim.home.esc}/ECM.ear"/>
+		
+		<echo message="Megring allmenu.xml,defaultdata.xml,ConfigValues.xml and Creating channel"/>
+		<exec dir="${tibco.ac.home.esc}/bin" executable="cmd">
+			<env key="MQ_HOME" value="${tibco.cim.home.esc}"/>
+			<env key="AC_HOME" value="${tibco.ac.home.esc}"/>
+			<env key="MQ_CONFIG_FILE" value="${tibco.cim.home.esc}/config/ConfigValues.xml"/>
+			<env key="MQ_LOG" value="${tibco.cim.home.esc}/log"/>
+			<env key="JBOSS_HOME" value="${tmp.jboss.home.esc}"/>
+			<env key="NODE_ID" value="${tmp.node.id}"/>
+			<arg value="/c"/>
+			<arg value="fcpostinstallconfig.bat"/>
+		</exec>
+		<echo message="End Megring allmenu.xml,defaultdata.xml,ConfigValues.xml and Creating channel"/>
+
+		<!-- verson.properties copying code-->
+		<echo message="Creating directory structure for the version.properties"/>
+		<mkdir dir="${tibco.cim.home.esc}/lib/plugins" />
+		<mkdir dir="${tibco.cim.home.esc}/lib/plugins/fulfillmentcatalog" />
+		<echo message="Copying version.properties"/>
+		<move todir="${tibco.cim.home.esc}/lib/plugins/fulfillmentcatalog" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/samples/version.properties"/>
+		</move>
+		<echo message="Done copying version.properties"/>
+		<echo message="Done with creating directory structure for the version.properties"/>		
+
+		<!-- config/rules copying code-->
+		<echo message="Copying config/rules"/>
+		<move todir="${tibco.cim.home.esc}/config/rules" verbose="true" overwrite="true">
+			<fileset dir="${tibco.ac.home.esc}/config/rules">
+				<exclude name="**/BUSINESSPROCESS_*.xml"/>
+			</fileset>			
+		</move>
+		<echo message="Done copying config/rules"/>
+		
+		<!-- copying standard/forms-->
+		<echo message="Copying standard/forms"/>
+		<move todir="${tibco.cim.common.dir.esc}/standard/forms" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/common/standard/forms/*"/>
+		</move>
+		<echo message="Done copying standard/forms"/>
+
+		<!-- copying standard/template-->
+		<echo message="Copying standard/template"/>
+		<move todir="${tibco.cim.common.dir.esc}/standard/template" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/common/standard/template/*"/>
+		</move>
+		<echo message="Done copying standard/template"/>
+		
+		<echo message="Copying wfin26dataservicev2.xml from ${tibco.ac.home.esc}/common/standard/workflow/wfin26dataservicev2.xml To ${tibco.cim.common.dir.esc}/standard/workflow."/>
+		<move file="${tibco.cim.common.dir.esc}/standard/workflow/wfin26dataservicev2.xml" tofile="${tibco.cim.common.dir.esc}/standard/workflow/wfin26dataservicev2.xml.bkp"/>
+		<copy todir="${tibco.cim.common.dir.esc}/standard/workflow" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/common/standard/workflow/wfin26dataservicev2.xml"/>
+		</copy>
+		<echo message="Done copying wfin26dataservicev2.xml"/>
+		
+	</target>
+    
+    <target name="installerMergeFCNotWindows" if="isOSUnix" depends="checkAppServer,configureAS.ifJBOSS,configureAS.ifNotJBOSS">
+        <echo message="merging FC resources to ${tibco.cim.home.esc}/ECM.ear"/>
+		<echo>This is an Unix machine.</echo>
+	   	<exec dir="${tibco.ac.home.esc}/bin" executable="/bin/sh">
+			<env key="MQ_HOME" value="${tibco.cim.home.esc}"/>
+			<env key="AC_HOME" value="${tibco.ac.home.esc}"/>
+			<env key="MQ_COMMON_DIR" value="${tibco.cim.common.dir.esc}"/>
+			<env key="MQ_CONFIG_FILE" value="${tibco.cim.home.esc}/config/ConfigValues.xml"/>
+			<env key="MQ_LOG" value="${tibco.cim.home.esc}/log"/>
+			<env key="JBOSS_HOME" value="${tmp.jboss.home.esc}"/>
+			<env key="NODE_ID" value="${tmp.node.id}"/>
+	     	<arg line="accustomutil.sh"/>
+		</exec>
+        <echo message="End merging FC resources to ${tibco.cim.home.esc}/ECM.ear"/>
+		
+		<echo message="Megring AllMenu.xml,defaultdata.xml,ConfigValues.xml and Creating channel"/>
+		<exec dir="${tibco.ac.home.esc}/bin" executable="/bin/sh">
+			<env key="MQ_HOME" value="${tibco.cim.home.esc}"/>
+			<env key="AC_HOME" value="${tibco.ac.home.esc}"/>
+			<env key="MQ_CONFIG_FILE" value="${tibco.cim.home.esc}/config/ConfigValues.xml"/>
+			<env key="MQ_LOG" value="${tibco.cim.home.esc}/log"/>
+			<env key="JBOSS_HOME" value="${tmp.jboss.home.esc}"/>
+			<env key="NODE_ID" value="${tmp.node.id}"/>
+	     	<arg line="fcpostinstallconfig.sh"/>
+		</exec>
+		<echo message="Megring allmenu.xml,defaultdata.xml,ConfigValues.xml and Creating channel"/>
+		
+		<!-- verson.properties copying code-->
+		<echo message="Creating directory structure for the version.properties"/>
+		<mkdir dir="${tibco.cim.home.esc}/lib/plugins/fulfillmentcatalog" />
+		<echo message="Copying version.properties"/>
+		<move todir="${tibco.cim.home.esc}/lib/plugins/fulfillmentcatalog" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/samples/version.properties"/>
+		</move>
+		<echo message="Done copying version.properties"/>
+		<echo message="Done with creating directory structure for the version.properties"/>
+
+		<!-- config/rules copying code-->
+		<echo message="Copying config/rules"/>
+		<move todir="${tibco.cim.home.esc}/config/rules" verbose="true" overwrite="true">
+			<fileset dir="${tibco.ac.home.esc}/config/rules">
+				<exclude name="**/BUSINESSPROCESS_*.xml"/>
+			</fileset>			
+		</move>
+		<echo message="Done copying config/rules"/>
+
+		<!-- copying standard/forms-->
+		<echo message="Copying standard/forms"/>
+		<move todir="${tibco.cim.common.dir.esc}/standard/forms" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/common/standard/forms/*"/>
+		</move>
+		<echo message="Done copying standard/forms"/>
+
+		<!-- copying standard/template-->
+		<echo message="Copying standard/template"/>
+		<move todir="${tibco.cim.common.dir.esc}/standard/template" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/common/standard/template/*"/>
+		</move>
+		<echo message="Done copying standard/template"/>
+		
+		<echo message="Copying wfin26dataservicev2.xml from ${tibco.ac.home.esc}/common/standard/workflow/wfin26dataservicev2.xml To ${tibco.cim.common.dir.esc}/standard/workflow."/>
+		<move file="${tibco.cim.common.dir.esc}/standard/workflow/wfin26dataservicev2.xml" tofile="${tibco.cim.common.dir.esc}/standard/workflow/wfin26dataservicev2.xml.bkp"/>
+		<copy todir="${tibco.cim.common.dir.esc}/standard/workflow" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/common/standard/workflow/wfin26dataservicev2.xml"/>
+		</copy>
+		<echo message="Done copying wfin26dataservicev2.xml"/>
+		
+	</target>
+    
+	<target name="opd-post-install" depends="initForInstaller">
+		<!--delete dir="${tibco.cim.home.esc}/configurator/tomcat/webapps/opdesigner"/>
+		<delete dir="${tibco.cim.home.esc}/configurator/opdesigner"/>
+		<copy file="${tibco.ac.home.esc}/opdesigner.war" todir="${tibco.cim.home.esc}/configurator/tomcat/webapps"/-->	    	    
+	</target>
+
+	<target name="checkAppServer">
+	    <xmlproperty file="${tibco.cim.home.esc}/config/ConfigValues.xml" />
+		<property name="app.server" value="${Configuration.Server.Category.Group(typeValue)}"/>
+        <condition property="isSingleNodeJBOSS">
+			<and>
+				<not>
+				    <matches pattern="," string="${app.server}" /> 		
+				</not>
+				<matches pattern="JBOSS" string="${app.server}" /> 
+			</and>
+		</condition>
+		<condition property="isNotSingleNodeJBOSS">
+		 <not>
+			<and>
+				<not>
+				    <matches pattern="," string="${app.server}" /> 		
+				</not>
+				<matches pattern="JBOSS" string="${app.server}" /> 
+			</and>
+		  </not>	
+   		</condition>
+	</target>
+	
+	<target name="configureAS.ifJBOSS" if="${isSingleNodeJBOSS}" depends="startup.shutdown.script.copy">
+		<echo message="Copying module to jboss module to ${tmp.jboss.home.esc}/modules from ${tibco.ac.home.esc}/deploy/jboss/vEAP-7.0/modules"/>
+		<copy todir="${tmp.jboss.home.esc}/modules">
+			 <fileset dir="${tibco.ac.home.esc}/deploy/jboss/vEAP-7.0/modules/" />
+		</copy>				
+	</target>
+	
+	<target name="startup.shutdown.script.copy" if="${is.jboss.internal}" >
+		<echo message="Copying startup and shutdown jboss script to ${tmp.jboss.home.esc}/bin from ${tibco.ac.home.esc}/deploy/jboss/vEAP-7.0/bin"/>
+		<copy todir="${tmp.jboss.home.esc}/bin">
+			 <fileset dir="${tibco.ac.home.esc}/deploy/jboss/vEAP-7.0/bin/" />
+		</copy>
+	</target>
+	
+	<target name="configureAS.ifNotJBOSS" if="${isNotSingleNodeJBOSS}">
+		<echo message="Not configuring application server as detected more than one node in configuration or application server is not JBOSS."/>
+	</target>
+	
+	
+	<target name="installerCreateSampleEnterprise" depends="initForInstaller,setNodeIDAndJBOSSHOME,installerCreateSampleEnterpriseWindows, installerCreateSampleEnterpriseNotWindows" />
+
+    <target name="installerCreateSampleEnterpriseWindows" unless="${env.FC_MULTI_DEPLOY}" if="isOSWindows">
+        <echo message="creating sample enterprise structure to ${tibco.cim.common.dir.esc}"/>
+		<echo>This is a Windows machine.</echo>
+		<exec dir="${tibco.ac.home.esc}/bin" executable="cmd">
+			<env key="MQ_HOME" value="${tibco.cim.home.esc}"/>
+			<env key="AC_HOME" value="${tibco.ac.home.esc}"/>
+			<env key="MQ_COMMON_DIR" value="${tibco.cim.common.dir.esc}"/>
+			<env key="MQ_CONFIG_FILE" value="${tibco.cim.home.esc}/config/ConfigValues.xml"/>
+			<env key="MQ_LOG" value="${tibco.cim.home.esc}/log"/>
+			<env key="JBOSS_HOME" value="${tmp.jboss.home.esc}"/>
+			<env key="NODE_ID" value="${tmp.node.id}"/>
+			<arg value="/c"/>
+			<arg value="sampleenterprisestructure.bat"/>
+		</exec>
+		<echo message="Copying RulebaseCustomFuction Class from ${tibco.ac.home.esc}/common/standard/rulebase/ To ${tibco.cim.common.dir.esc}/${sample.ent.name}/rulebase/"/>
+		<copy todir="${tibco.cim.common.dir.esc}/${sample.ent.name}/rulebase" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/common/standard/rulebase/RulebaseCustomFunction.class"/>
+		</copy>
+		
+		<echo message="Creating metadata directory inside ${sample.ent.name} sample enterprise"/>
+		<mkdir dir="${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata" />
+		<mkdir dir="${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata/incoming" />
+		<mkdir dir="${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata/done" />
+		<mkdir dir="${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata/rejected" />	
+		<echo message="Done with creating metadata directory inside ${sample.ent.name} sample enterprise"/>
+		<echo message="Copying ProductAndServiceCatalog_Metadata.zip metadata zip file To ${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata/incoming"/>
+		<copy todir="${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata/incoming" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/samples/ProductAndServiceCatalog_Metadata.zip"/>
+		</copy>
+        <echo message="Done copying ProductAndServiceCatalog_Metadata.zip metadata zip file"/>
+		<echo message="Copying FileWatcher.xml file To ${tibco.cim.home.esc}/config"/>
+		<move file="${tibco.cim.home.esc}/config/FileWatcher.xml" tofile="${tibco.cim.home.esc}/config/FileWatcher.xml.bkp" failonerror="false"/>
+		<copy todir="${tibco.cim.home.esc}/config" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/config/FileWatcher.xml"/>
+		</copy>
+        <echo message="Done copying FileWatcher.xml"/>
+        <echo message="End creating sample enterprise structure to ${tibco.cim.common.dir.esc}"/>
+    </target>
+
+    <target name="installerCreateSampleEnterpriseNotWindows" unless="${env.FC_MULTI_DEPLOY}" if="isOSUnix">
+        <echo message="creating sample enterprise structure to ${tibco.cim.common.dir.esc}"/>
+		<echo>This is an Unix machine.</echo>
+	   	<exec dir="${tibco.ac.home.esc}/bin" executable="/bin/sh">
+			<env key="MQ_HOME" value="${tibco.cim.home.esc}"/>
+			<env key="AC_HOME" value="${tibco.ac.home.esc}"/>
+			<env key="MQ_COMMON_DIR" value="${tibco.cim.common.dir.esc}"/>
+			<env key="MQ_CONFIG_FILE" value="${tibco.cim.home.esc}/config/ConfigValues.xml"/>
+			<env key="MQ_LOG" value="${tibco.cim.home.esc}/log"/>
+			<env key="JBOSS_HOME" value="${tmp.jboss.home.esc}"/>
+			<env key="NODE_ID" value="${tmp.node.id}"/>
+	     	<arg line="sampleenterprisestructure.sh"/>
+		</exec>
+		<echo message="Copying RulebaseCustomFuction Class from ${tibco.ac.home.esc}/common/standard/rulebase/ To ${tibco.cim.common.dir.esc}/${sample.ent.name}/rulebase/"/>
+		<copy todir="${tibco.cim.common.dir.esc}/${sample.ent.name}/rulebase" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/common/standard/rulebase/RulebaseCustomFunction.class"/>
+		</copy>
+		
+		<echo message="Copying wfin26dataservicev2.xml from ${tibco.ac.home.esc}/common/standard/workflow/wfin26dataservicev2.xml To ${tibco.cim.common.dir.esc}/standard/workflow."/>
+		<move file="${tibco.cim.common.dir.esc}/standard/workflow/wfin26dataservicev2.xml" tofile="${tibco.cim.common.dir.esc}/standard/workflow/wfin26dataservicev2.xml.bkp"/>
+		<copy todir="${tibco.cim.common.dir.esc}/standard/workflow" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/common/standard/workflow/wfin26dataservicev2.xml"/>
+		</copy>
+		
+		<echo message="Creating metadata directory inside ${sample.ent.name} sample enterprise"/>
+		<mkdir dir="${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata" />
+		<mkdir dir="${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata/incoming" />
+		<mkdir dir="${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata/done" />
+		<mkdir dir="${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata/rejected" />	
+		<echo message="Done with creating metadata directory inside ${sample.ent.name} sample enterprise"/>
+		<echo message="Copying ProductAndServiceCatalog.zip metadata zip file To ${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata/incoming"/>
+		<copy todir="${tibco.cim.common.dir.esc}/${sample.ent.name}/metadata/incoming" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/samples/ProductAndServiceCatalog_Metadata.zip"/>
+		</copy>
+        <echo message="Done copying ProductAndServiceCatalog.zip metadata zip file"/>
+		<echo message="Copying FileWatcher.xml file To ${tibco.cim.home.esc}/config"/>
+		<move file="${tibco.cim.home.esc}/config/FileWatcher.xml" tofile="${tibco.cim.home.esc}/config/FileWatcher.xml.bkp" failonerror="false"/>
+		<copy todir="${tibco.cim.home.esc}/config" overwrite="true">
+			<fileset file="${tibco.ac.home.esc}/config/FileWatcher.xml"/>
+		</copy>
+        <echo message="Done copying FileWatcher.xml"/>
+        <echo message="End creating sample enterprise structure to ${tibco.cim.common.dir.esc}"/>
+    </target>
+    
+	<target name="installerSeedDataCreation"  depends="initForInstaller,setNodeIDAndJBOSSHOME,installerSeedDataCreationWindows, installerSeedDataCreationNotWindows"/>
+
+
+	<target name="installerSeedDataCreationNotWindows" unless="${env.FC_MULTI_DEPLOY}" if="isOSUnix">
+		<echo message="Creating seed data"/>
+		<exec dir="${tibco.ac.home.esc}/bin" executable="/bin/sh">
+			<env key="MQ_HOME" value="${tibco.cim.home.esc}"/>
+			<env key="AC_HOME" value="${tibco.ac.home.esc}"/>
+			<env key="MQ_CONFIG_FILE" value="${tibco.cim.home.esc}/config/ConfigValues.xml"/>
+			<env key="MQ_LOG" value="${tibco.cim.home.esc}/log"/>
+			<env key="JBOSS_HOME" value="${tmp.jboss.home.esc}"/>
+			<env key="NODE_ID" value="${tmp.node.id}"/>
+	     	<arg line="fcseeddatacreation.sh"/>
+		</exec>
+		<echo message="End creating seed data"/>
+	</target>
+
+	<target name="installerSeedDataCreationWindows" unless="${env.FC_MULTI_DEPLOY}" if="isOSWindows">
+		<echo message="Creating seed data"/>
+		<exec dir="${tibco.ac.home.esc}/bin" executable="cmd">
+			<env key="MQ_HOME" value="${tibco.cim.home.esc}"/>
+			<env key="AC_HOME" value="${tibco.ac.home.esc}"/>
+			<env key="MQ_CONFIG_FILE" value="${tibco.cim.home.esc}/config/ConfigValues.xml"/>
+			<env key="MQ_LOG" value="${tibco.cim.home.esc}/log"/>
+			<env key="JBOSS_HOME" value="${tmp.jboss.home.esc}"/>
+			<env key="NODE_ID" value="${tmp.node.id}"/>
+			<arg value="/c"/>
+	     	<arg line="fcseeddatacreation.bat"/>
+		</exec>
+		<echo message="End creating seed data"/>
+	</target>	
+
+		
+	<!-- called from the installer -->
+	<target name="updateMDMConfigValues" depends="initForInstaller">
+		<!-- This file holds values for all the properties which are used in this xml file -->	
+
+		<!-- Path to all required jar files -->
+		<path id="master-classpath">
+			<fileset dir="${tibco.cim.home}/lib">
+				<include name="**/*.jar"/>
+			</fileset>				
+		</path>
+
+		<!--  Task definition for our custom tasks -->
+		<echo message="Modifing conf-values.properties based on deployment env : ${env.FC_MULTI_DEPLOY} / ALL IN ONE MODE : ${env.MQ_ALL_IN_ONE_MODE}"/>
+		<property name="tibco.cim.configvalues.prop" value="${tibco.ac.home}/deploy/upload/properties/conf-values.properties"/>  
+		<property name="tibco.cim.igniteMemberFile" value="${tibco.cim.home}/config/IgniteMember.xml"/>  
+		<property name="tibco.cim.fileWatcherFile" value="${tibco.cim.home}/config/FileWatcher.xml"/>  
+
+		<if>
+			<and>
+			    <equals arg1="${env.FC_MULTI_DEPLOY}" arg2="true" trim="true"/>
+                <isset property="env.MQ_ALL_IN_ONE_MODE"/>
+				<not>
+					<equals arg1="${env.MQ_ALL_IN_ONE_MODE}" arg2="true" trim="true"/>
+				</not>
+			</and>
+			<then>
+				<!-- update the JMS messaging type -->
+				<replace  file="${tibco.cim.configvalues.prop}">
+					<replacetoken><![CDATA[cluster=JNDICluster]]></replacetoken>
+					<replacevalue><![CDATA[cluster=TIBCOCluster]]></replacevalue>
+				</replace>					
+			</then>
+		</if>			                                                                                                                                                                                  
+		
+		<!-- Changes for FC Multi container mode -->
+		<if>
+			<equals arg1="${env.FC_MULTI_DEPLOY}" arg2="true" trim="true"/>
+			<then>
+				<!-- update the cache type -->
+				<replace  file="${tibco.cim.configvalues.prop}">
+					<replacetoken><![CDATA[type=AS]]></replacetoken>
+					<replacevalue><![CDATA[type=Ignite]]></replacevalue>
+				</replace>		
+				
+				<!-- enable the Multi tab support -->
+				<replace  file="${tibco.cim.configvalues.prop}">
+					<replacetoken><![CDATA[multitab.enable=false]]></replacetoken>
+					<replacevalue><![CDATA[multitab.enable=true]]></replacevalue>
+				</replace>
+				
+				
+				<!-- Set upload file size limit to 50MB for fc multicontainer deployment -->
+				<replace file="${tibco.cim.configvalues.prop}">
+					<replacetoken><![CDATA[cim.file.size=10485760]]></replacetoken>
+					<replacevalue><![CDATA[cim.file.size=52428800]]></replacevalue>
+				</replace>
+				
+				<!-- disable thread logger -->
+				<replace file="${tibco.cim.configvalues.prop}">
+					<replacetoken><![CDATA[threadlogger.enable=true]]></replacetoken>
+					<replacevalue><![CDATA[threadlogger.enable=false]]></replacevalue>
+				</replace>
+				
+				<!-- Showing MDM Docs menus for k8s per environment -->
+								
+				<replace file="${tibco.cim.configvalues.prop}" token="url=https://docs.tibco.com/go/mdm/9.1.0/" value="url=/docs/" />	
+			
+				
+				<!-- update the database type -->
+				<if>
+					<equals arg1="${env.MQ_MDM_DB_TYPE}" arg2="ORACLE" trim="true"/>
+					<then>
+						<replace  file="${tibco.cim.configvalues.prop}">
+							<replacetoken><![CDATA[typeValue=POSTGRES]]></replacetoken>
+							<replacevalue><![CDATA[typeValue=ORACLE]]></replacevalue>
+						</replace>
+						
+						<!-- JDBC Dstasource Upload. -->
+						<replace  file="${tibco.cim.configvalues.prop}">
+							<replacetoken><![CDATA[connection=false]]></replacetoken>
+							<replacevalue><![CDATA[connection=true]]></replacevalue>
+						</replace>
+					</then>
+				</if>
+				
+				<!-- update the active mq url -->
+				<!--if>
+					<isset property="env.ACTIVE_MQ_URL"/>
+					<then>
+						<replace  file="${tibco.cim.configvalues.prop}" token="clusterLiaison.clusteredServers=tcp://localhost:61616"
+							value="clusterLiaison.clusteredServers=${env.ACTIVE_MQ_URL}"/>
+					</then>
+				</if-->
+				
+				<if>
+					<isset property="env.EMS_SERVER_URL"/>
+					<then>
+						<replace  file="${tibco.cim.configvalues.prop}" token="clusterLiaison.clusteredServer.LocalhostServer=tcp://localhost:7222"
+							value="clusterLiaison.clusteredServer.LocalhostServer=${env.EMS_SERVER_URL}"/>
+					</then>
+				</if>
+				
+				<if>
+					<isset property="env.EMS_USER_NAME"/>
+					<then>
+						<replace  file="${tibco.cim.configvalues.prop}" token="cluster.TIBCOCluster.defUser=admin"
+							value="cluster.TIBCOCluster.defUser=${env.EMS_USER_NAME}"/>
+					</then>
+				</if>
+				
+				<if>
+					<isset property="env.EMS_PASSWORD"/>
+					<then>
+						<replace  file="${tibco.cim.configvalues.prop}" token="cluster.TIBCOCluster.defPassword=admin"
+							value="cluster.TIBCOCluster.defUser=${env.EMS_PASSWORD}"/>
+					</then>
+				</if>
+
+				<!-- START CUSTOM PROPERTIES -->
+				<if>
+					<isset property="env.CUSTOM_LOG4J_APPENDER_ERROR"/>
+					<then>
+						<replace  file="${tibco.cim.configvalues.prop}" token="log4j.appender.error=org.apache.log4j.RollingFileAppender"
+							value="log4j.appender.error=${env.CUSTOM_LOG4J_APPENDER_ERROR}"/>
+					</then>
+				</if>
+
+				<if>
+					<isset property="env.CUSTOM_LOG4J_APPENDER_ELINK"/>
+					<then>
+						<replace  file="${tibco.cim.configvalues.prop}" token="log4j.appender.elink=org.apache.log4j.RollingFileAppender"
+							value="log4j.appender.elink=${env.CUSTOM_LOG4J_APPENDER_ELINK}"/>
+					</then>
+				</if>
+
+				<!-- END CUSTOM PROPERTIES -->
+				
+				<!-- If MQ_ALL_IN_ONE_MODE, then make changes to the IngiteMember.xml to set the clientMode=false -->
+				<if>
+					<equals arg1="${env.MQ_ALL_IN_ONE_MODE}" arg2="true" trim="true"/>
+					<then>
+						<replace file="${tibco.cim.igniteMemberFile}" token="&lt;property name=&quot;clientMode&quot; value=&quot;true&quot;/&gt;" value="&lt;property name=&quot;clientMode&quot; value=&quot;false&quot;/&gt;" />
+					</then>
+				</if>
+
+				<!-- <if>
+					<equals arg1="${env.MQ_ALL_IN_ONE_MODE}" arg2="false" trim="true"/>
+					<then>
+						<replace file="${tibco.cim.fileWatcherFile}" token="&lt;DataSet type=&quot;single&quot;&gt;&lt;Name&gt;ENT1 Import&lt;/Name&gt;" value="&lt;doubledash&lt;DataSet type=&quot;single&quot;&gt;&lt;Name&gt;ENT1 Import&lt;/Name&gt;"/>
+						
+						<replace file="${tibco.cim.fileWatcherFile}" token="&lt;URI&gt;/FC41/metadata&lt;/URI&gt;&lt;/URLInfo&gt;&lt;/Dataset&gt;" value="&lt;URI&gt;/FC41/metadata&lt;/URI&gt;&lt;/URLInfo&gt;&lt;/Dataset doubledash&gt;"/>
+					</then>
+				</if> -->
+
+				<!-- update DB USER, PWD, DATABASE NAME -->
+				<!-- Having issues with replacetoken/replacevalue when trying to replave with env variable. -->
+				<replace file="${tibco.cim.configvalues.prop}" token="database.name=velodb" value="database.name=${env.MQ_MDM_DB_NAME}" />
+
+				<replace file="${tibco.cim.configvalues.prop}" token="database.name=velodb" value="database.name=${env.MQ_MDM_DB_NAME}" />
+				<replace file="${tibco.cim.configvalues.prop}" token="database.user=mdmuser" value="database.user=${env.MQ_MDM_DB_USER}" />
+				<replace file="${tibco.cim.configvalues.prop}" token="database.password=mdmpassword" value="database.password=${env.MQ_MDM_DB_USER_PWD}" />	
+				<!-- work arround for Alpine -->
+				<replace file="${tibco.cim.configvalues.prop}" token="database.name=$${env.MQ_MDM_DB_NAME}" value="database.name=${env.MQ_MDM_DB_NAME}" />
+				<replace file="${tibco.cim.configvalues.prop}" token="database.user=$${env.MQ_MDM_DB_USER}" value="database.user=${env.MQ_MDM_DB_USER}" />
+				<replace file="${tibco.cim.configvalues.prop}" token="database.password=$${env.MQ_MDM_DB_USER_PWD}" value="database.password=${env.MQ_MDM_DB_USER_PWD}" />	
+
+			</then>
+		</if>
+		
+		<taskdef name="ConfigValuesEditor" classname="com.tibco.mdm.cloud.build.ConfigValuesEditor" classpathref="master-classpath" />
+		<!-- change some properties in ConfigValues.xml -->
+		<ConfigValuesEditor 
+				inputXml="${tibco.cim.home}/config/ConfigValues.xml" 
+				properties="${tibco.ac.home}/deploy/upload/properties/conf-values.properties" 
+				destDir="${tibco.cim.home}/config"/>							
+
+		<echo message="MDM Config Values had been successfully updated..."/>
+	</target>
+	<!-- called from the installer -->
+	<target name="updateJBOSSConfigFile" depends="initForInstaller">	
+		<property name="tibco.cim.jboss.home"   value="${tibco.cim.home.esc}/bin/wildfly-10.1.0.Final"/>
+		<property name="tibco.cim.pgsql.home"   value="${tibco.cim.home.esc}/bin/pgsql"/>
+
+        <echo message="coping ORACLE, POSTGRES drivers into configurator webapps lib folder"/>
+		<!-- copy ORACLE, POSTGRES driver into configurator webapps lib folder -->
+		<copy file="${tibco.cim.pgsql.home}/driver/postgresql-42.1.1.jar" todir="${tibco.cim.home.esc}/configurator/tomcat/webapps/config/WEB-INF/lib"/>			
+		<if>
+		    <and>
+				<equals arg1="${env.FC_MULTI_DEPLOY}" arg2="true" trim="true"/>
+				<equals arg1="${env.MQ_MDM_DB_TYPE}" arg2="ORACLE" trim="true"/>
+			</and>
+            <then>
+            	<copy file="${tibco.cim.jboss.home}/modules/system/layers/base/com/oracle/main/ojdbc8.jar" todir="${tibco.cim.home.esc}/configurator/tomcat/webapps/config/WEB-INF/lib"/>	
+			</then>
+		</if>
+		<!-- use the appropriate standalone.xml based on TROPS vs SimpleInstall.-->
+		<echo message="Using the appropriate standalone.xml based on fc multi container deploy env : ${env.FC_MULTI_DEPLOY} / ALL IN ONE MODE : ${env.MQ_ALL_IN_ONE_MODE}"/>
+		<if>
+			<equals arg1="${env.FC_MULTI_DEPLOY}" arg2="true" trim="true"/>
+			<then>
+				<if>
+			        <equals arg1="${env.MQ_MDM_DB_TYPE}" arg2="POSTGRES" trim="true"/>
+					<then>
+						<echo  message="MDM DB TYPE is POSTGRES"></echo>
+						<xmltask source="${tibco.ac.home}/deploy/wildfly/standalone/configuration/k8s_standalone-full-ha.xml" dest="${tibco.cim.jboss.home}/standalone/configuration/standalone.xml" report="true">
+							<remove path=
+							 "/*[local-name()='server' and namespace-uri()='urn:jboss:domain:4.2']
+								 /*[local-name()='profile' and namespace-uri()='urn:jboss:domain:4.2']
+								   /*[local-name()='subsystem' and namespace-uri()='urn:jboss:domain:datasources:4.0']
+									 /*[local-name()='datasources' and namespace-uri()='urn:jboss:domain:datasources:4.0']
+									 /*[local-name()='datasource' and namespace-uri()='urn:jboss:domain:datasources:4.0'][3]"/> 
+									 <!-- If Postgress, then remove the Oracle Datasource -->
+							
+							<remove path=
+							 "/*[local-name()='server' and namespace-uri()='urn:jboss:domain:4.2']
+								 /*[local-name()='profile' and namespace-uri()='urn:jboss:domain:4.2']
+								   /*[local-name()='subsystem' and namespace-uri()='urn:jboss:domain:datasources:4.0']
+									 /*[local-name()='datasources' and namespace-uri()='urn:jboss:domain:datasources:4.0']
+									 /*[local-name()='drivers' and namespace-uri()='urn:jboss:domain:datasources:4.0']
+									 /*[local-name()='driver' and namespace-uri()='urn:jboss:domain:datasources:4.0'][3]"/> 
+									 <!-- If Oracle, then remove the Oracle Driver -->						
+						</xmltask>
+					</then>
+				</if>
+				<if>
+					<equals arg1="${env.MQ_MDM_DB_TYPE}" arg2="ORACLE" trim="true"/>
+					<then>
+						<echo  message="MDM DB TYPE is ORACLE"></echo>
+						<xmltask source="${tibco.ac.home}/deploy/wildfly/standalone/configuration/k8s_standalone-full-ha.xml" dest="${tibco.cim.jboss.home}/standalone/configuration/standalone.xml" report="true">
+                            <remove path=
+							 "/*[local-name()='server' and namespace-uri()='urn:jboss:domain:4.2']
+								 /*[local-name()='profile' and namespace-uri()='urn:jboss:domain:4.2']
+								   /*[local-name()='subsystem' and namespace-uri()='urn:jboss:domain:datasources:4.0']
+									 /*[local-name()='datasources' and namespace-uri()='urn:jboss:domain:datasources:4.0']
+									 /*[local-name()='datasource' and namespace-uri()='urn:jboss:domain:datasources:4.0'][2]"/> 
+									 <!-- If Oracle, then remove the postgres Datasource -->						
+							<remove path=
+							 "/*[local-name()='server' and namespace-uri()='urn:jboss:domain:4.2']
+								 /*[local-name()='profile' and namespace-uri()='urn:jboss:domain:4.2']
+								   /*[local-name()='subsystem' and namespace-uri()='urn:jboss:domain:datasources:4.0']
+									 /*[local-name()='datasources' and namespace-uri()='urn:jboss:domain:datasources:4.0']
+									 /*[local-name()='drivers' and namespace-uri()='urn:jboss:domain:datasources:4.0']
+									 /*[local-name()='driver' and namespace-uri()='urn:jboss:domain:datasources:4.0'][2]"/> 
+									 <!-- If Oracle, then remove the postgres Driver -->						
+					    </xmltask>
+					</then>
+				</if>
+			</then>	
+		</if>
+	</target>
+	
+	<!--checking if for windows and non windows OS-->
+	<condition property="isOSUnix">
+		<os family="unix" />
+	</condition>
+
+	<condition property="isOSWindows">
+		<os family="windows" />
+	</condition>
+	
+</project>

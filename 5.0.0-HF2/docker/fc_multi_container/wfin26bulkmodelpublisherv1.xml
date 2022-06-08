@@ -1,0 +1,1459 @@
+<?xml version="1.0"?>
+<!--  
+    $Revision: 70941 $
+
+    Route  the Product Edit to approvers and data custodiansl.
+    There are 2 steps in this workflow
+    1. InternalApproval - uses 'Record Edit Approval' to identify approvers
+    2. TargetedRejection - If there are any rejections then send it back to data custodians , identified by 'Data Custodian' rules
+    3. Added SpawnWorkflow activity for V2V - to publish the record to velosel datapool.
+-->
+<Workflow Version="1.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  xsi:noNamespaceSchemaLocation="Workflow.xsd">
+	<Owner>TIBCO</Owner>
+	<Name>wfin26intiateaffwf</Name>
+	<Description>Process to publish product model </Description>
+	<Parameter direction="in" name="inDoc" description="Free form workflow description" type="document" eval="variable">1</Parameter>
+	
+	<Activity Name="AddMsgInfoToEvent">
+		<Start/>
+		<Action>UpdateEvent</Action>
+		<Description>Set the event state</Description>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" name="eventDescriptor" eval="constant" type="string">BULKMODELPUBLISH</Parameter>
+	</Activity>
+
+	<Activity Name="SelectModel">
+		<Action>FCNoOperation</Action>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="out" eval="variable" type="document" name="OutDocument">workDoc</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="FeatureName">ModelPublish</Parameter>
+		<Parameter direction="out" eval="variable" type="string" name="CatalogUse">CatalogType</Parameter>
+		<Parameter direction="out" eval="variable" type="string" name="TenantId">tenantId</Parameter>
+		<Parameter direction="out" eval="variable" type="string" name="SelectedNamedVersion">selectedNamedVersion</Parameter>
+		<Parameter direction="out" eval="variable" type="string" name="NamedVersionToCreate">namedVersionToCreate</Parameter>
+		<Parameter direction="out" eval="variable" type="string" name="FromTimestamp">fromTimeStamp</Parameter>
+		<Parameter direction="out" eval="variable" type="string" name="ToTimeStamp">toTimestamp</Parameter>
+		
+		<Parameter direction="out" eval="variable" type="string" name="PublishType">publishType</Parameter>
+		<Parameter direction="out" eval="variable" type="boolean" name="MetadataRequiredFlag">metadataRequiredFlag</Parameter>
+		
+	</Activity>
+	
+	<Activity Name="ComputeExportFileDirectory">
+		<Action>InterpretCommand</Action>
+		<Description lang="en">Determine the directory to store the export file</Description>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="out" name="TempFolderLocation" type="string" eval="variable">TempFolderLocation</Parameter>
+		<Parameter direction="in" name="pubType" type="string" eval="variable">PublishType</Parameter>
+		<Parameter direction="out" name="PrefixForZipFileName" type="string" eval="variable">PrefixForZipFileName</Parameter>
+		<Script format="bsh"><![CDATA[
+				java.lang.String TempFolderLocation = com.tibco.ac.util.ActiveCatalogUtility.createTempFilePath(MasterCatalog + "_Offline");
+				java.lang.String PrefixForZipFileName = pubType +"_"+ MasterCatalog + "_Offline";
+		]]></Script>
+	</Activity>
+
+	<Activity Name="ProductModelSubset">
+		<Action>EvaluateSubset</Action>
+		<Description lang="en">Apply subset on Product Model Data</Description>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">SUBSET</Parameter>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		
+		<Parameter name="NamedVersionPrefix" direction="in" eval="variable" type="string">SelectedNamedVersion</Parameter>
+		
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">CompatibleParty</Parameter>
+        <Parameter direction="in" name="RelationshipName1" type="string" eval="constant">ProductComprisedOf</Parameter>
+        <Parameter direction="in" name="RelationshipName2" type="string" eval="constant">Characteristic</Parameter>
+        <Parameter direction="in" name="RelationshipName3" type="string" eval="constant">CompatibleProduct</Parameter>
+		<Parameter direction="in" name="RelationshipName4" type="string" eval="constant">IncompatibleProduct</Parameter>
+        <Parameter direction="in" name="RelationshipName5" type="string" eval="constant">CompatibleSegment</Parameter>
+        <Parameter direction="in" name="RelationshipName6" type="string" eval="constant">IncompatibleSegment</Parameter>
+		<Parameter direction="in" name="RelationshipName7" type="string" eval="constant">CompatibleCharacteristic</Parameter>
+		<Parameter direction="in" name="RelationshipName8" type="string" eval="constant">IncompatibleCharacteristic</Parameter>		
+        <Parameter direction="in" name="RelationshipName9" type="string" eval="constant">IncompatibleParty</Parameter>
+        <Parameter direction="in" name="RelationshipName10" type="string" eval="constant">ProductPricedBy</Parameter>
+		<Parameter direction="in" name="RelationshipName11" type="string" eval="constant">ProductRequiredFor</Parameter>
+		<Parameter direction="in" name="RelationshipName12" type="string" eval="constant">ProductHasProvidePlanFragment</Parameter>
+		<Parameter direction="in" name="RelationshipName13" type="string" eval="constant">ProductHasUpdatePlanFragment</Parameter>
+		<Parameter direction="in" name="RelationshipName14" type="string" eval="constant">ProductHasCeasePlanFragment</Parameter>
+		<Parameter direction="in" name="RelationshipName15" type="string" eval="constant">ProductHasCancelPlanFragment</Parameter>
+		<Parameter direction="in" name="RelationshipName16" type="string" eval="constant">PlanFragmentHasMilestone</Parameter>
+		<Parameter direction="in" name="RelationshipName17" type="string" eval="constant">PriceRequiresSegment</Parameter>
+		<Parameter direction="in" name="RelationshipName18" type="string" eval="constant">ProductHasCustomPlanFragment</Parameter>
+		<Parameter direction="in" name="RelationshipName19" type="string" eval="constant">ProductDependsOn</Parameter>
+		<Parameter direction="in" name="RelationshipName20" type="string" eval="constant">ProductGovernedByRule</Parameter>
+		<Parameter direction="in" name="RelationshipName21" type="string" eval="constant">Category</Parameter>
+		<Parameter direction="in" name="RelationshipName22" type="string" eval="constant">ProductToMigrate</Parameter>
+		<Parameter direction="in" name="RelationshipName23" type="string" eval="constant">Condition</Parameter>
+		<Parameter direction="in" name="RelationshipName24" type="string" eval="constant">RuleParameter</Parameter>
+		<Parameter direction="in" name="RelationshipName25" type="string" eval="constant">MilestoneDependsOn</Parameter>
+		<Parameter direction="in" name="RelationshipName26" type="string" eval="constant">HasDataType</Parameter>
+		<Parameter direction="in" name="RelationshipName27" type="string" eval="constant">HasChannel</Parameter>
+
+		
+		<Parameter direction="in" name="VersionOption" type="string" eval="constant">CONFIRMED</Parameter> 
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="out" name="RecordsProcessed" type="long" eval="variable">recordsProcessed1</Parameter>
+	</Activity>
+
+	<Activity Name="EvaluateRuleBase">
+		<Action>EvaluateRuleBase</Action>
+		<Description lang="en">Apply validation rules</Description>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">EVALUATERULEBASE</Parameter>
+		<Parameter direction="in" name="Rulebase" eval="constant" type="string">standard/rulebase/filterproductgrouprecord.xml</Parameter>
+		<Parameter direction="in" name="CatalogUseForFilter" type="string" eval="variable">CatalogUse</Parameter>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" name="InRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="in" name="EvaluateChildren" type="boolean" eval="constant">FALSE</Parameter>
+		<Parameter direction="in" name="CatalogValidation" type="boolean" eval="constant">FALSE</Parameter>
+		<!-- Severity: Validations with severity < input Severity are considered Fatal errors.  The rest are considered Warnings. -->
+		<Parameter direction="in" name="Severity" type="long" eval="constant">9</Parameter>
+		<!--    RemoveRecord : NONE - Do NOT remove records with errors.  FATAL - Remove records with Fatal errors (see Severity)  -->
+		<Parameter direction="in" name="RemoveRecord" type="string" eval="constant">FATAL</Parameter>
+		<!-- SaveFlag indicates if any changes to attributes should be saved in the database. Values are: SAVE,NOSAVE -->
+		<Parameter direction="in" name="SaveFlag" type="string" eval="constant">NOSAVE</Parameter>
+		<!-- LogOption: A - AttributeLog, F - Log File -->
+		<Parameter direction="in" name="LogOption" type="string" eval="constant">F</Parameter>
+		<!-- Number of FATAL errors (see Severity) -->
+		<Parameter direction="out" name="ValidationErrors" type="long" eval="variable">fatalErrors</Parameter>
+		<!-- Number of Warnings (see Severity) -->
+		<Parameter direction="out" name="ValidationErrors1" type="long" eval="variable">warningErrors</Parameter>
+		<!-- OutRecordList - with Valid record bundles -->
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<!-- OutRecordList2 - with Error record bundles -->
+		<Parameter direction="out" name="OutRecordList2" type="recordlist" eval="variable">workRecordList1</Parameter>
+		<Parameter direction="out" name="RecordsProcessed" type="long" eval="variable">recordsProcessed</Parameter>
+    </Activity>
+
+	<Activity Name="CustomerModelSubset">
+		<Action>EvaluateSubset</Action>
+		<Description lang="en">Apply subset on Customer Model Data</Description>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">SUBSET</Parameter>
+		<Parameter name="NamedVersionPrefix" direction="in" eval="variable" type="string">SelectedNamedVersion</Parameter>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="VersionOption" type="string" eval="constant">CONFIRMED</Parameter>
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="out" name="RecordsProcessed" type="long" eval="variable">recordsProcessed</Parameter>
+    </Activity>
+
+	<Activity Name="SegmentModelSubset">
+		<Action>EvaluateSubset</Action>
+		<Description lang="en">Apply subset on Segment Model Data</Description>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">SUBSET</Parameter>
+		<Parameter name="NamedVersionPrefix" direction="in" eval="variable" type="string">SelectedNamedVersion</Parameter>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="VersionOption" type="string" eval="constant">CONFIRMED</Parameter>
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="out" name="RecordsProcessed" type="long" eval="variable">recordsProcessed</Parameter>
+    </Activity>
+
+	<Activity Name="PlanFragmentModelSubset">
+		<Action>EvaluateSubset</Action>
+		<Description lang="en">Apply subset on Plan Fragment Model Data</Description>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">SUBSET</Parameter>
+		<Parameter name="NamedVersionPrefix" direction="in" eval="variable" type="string">SelectedNamedVersion</Parameter>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">PlanfragmentHasMilestone</Parameter>
+		<Parameter direction="in" name="RelationshipName1" type="string" eval="constant">MilestoneToMilestone</Parameter>
+		<Parameter direction="in" name="RelationshipName2" type="string" eval="constant">CompensatedBy</Parameter>
+		<Parameter direction="in" name="RelationshipName3" type="string" eval="constant">RedoneBy</Parameter>		
+		<Parameter direction="in" name="VersionOption" type="string" eval="constant">CONFIRMED</Parameter>
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="out" name="RecordsProcessed" type="long" eval="variable">recordsProcessed</Parameter>
+    </Activity>
+
+	<Activity Name="ActionModelSubset">
+		<Action>EvaluateSubset</Action>
+		<Description lang="en">Apply subset on Action Model Data</Description>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">SUBSET</Parameter>
+		<Parameter name="NamedVersionPrefix" direction="in" eval="variable" type="string">SelectedNamedVersion</Parameter>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="VersionOption" type="string" eval="constant">CONFIRMED</Parameter>
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="out" name="RecordsProcessed" type="long" eval="variable">recordsProcessed</Parameter>
+	</Activity>
+
+	<Activity Name="PriceModelSubset">
+		<Action>EvaluateSubset</Action>
+		<Description lang="en">Apply subset on Price Model Data</Description>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">SUBSET</Parameter>
+		<Parameter name="NamedVersionPrefix" direction="in" eval="variable" type="string">SelectedNamedVersion</Parameter>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">CharacteristicCharge</Parameter>
+		<Parameter direction="in" name="RelationshipName1" type="string" eval="constant">PriceAlteredByAllowance</Parameter>
+		<Parameter direction="in" name="RelationshipName2" type="string" eval="constant">PriceAlteredByDiscount</Parameter>
+		<Parameter direction="in" name="RelationshipName3" type="string" eval="constant">PriceComprisedOf</Parameter>
+		<Parameter direction="in" name="RelationshipName4" type="string" eval="constant">PriceGovernedByRule</Parameter>
+		<Parameter direction="in" name="RelationshipName5" type="string" eval="constant">PriceRequiresCharacteristic</Parameter>
+		<Parameter direction="in" name="RelationshipName6" type="string" eval="constant">PriceRequiresParty</Parameter>
+		<Parameter direction="in" name="RelationshipName7" type="string" eval="constant">PriceRequiresProduct</Parameter>
+		<Parameter direction="in" name="RelationshipName8" type="string" eval="constant">PriceRequiresProductGroup</Parameter>
+		<Parameter direction="in" name="RelationshipName9" type="string" eval="constant">PriceRequiresSegment</Parameter>
+		<Parameter direction="in" name="RelationshipName10" type="string" eval="constant">PriceGovernedBy</Parameter>
+		<Parameter direction="in" name="RelationshipName11" type="string" eval="constant">GroupRequiresProducts</Parameter>
+		<Parameter direction="in" name="RelationshipName12" type="string" eval="constant">DiscountRequiresSegment</Parameter>
+		<Parameter direction="in" name="VersionOption" type="string" eval="constant">CONFIRMED</Parameter>
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="out" name="RecordsProcessed" type="long" eval="variable">recordsProcessed</Parameter>
+    </Activity>
+	
+	<Activity Name="DiscountModelSubset">
+		<Action>EvaluateSubset</Action>
+		<Description lang="en">Apply subset on Discount Model Data</Description>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">SUBSET</Parameter>
+		<Parameter name="NamedVersionPrefix" direction="in" eval="variable" type="string">SelectedNamedVersion</Parameter>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">DiscountComprisedOf</Parameter>
+		<Parameter direction="in" name="RelationshipName1" type="string" eval="constant">DiscountGovernedBy</Parameter>
+		<Parameter direction="in" name="RelationshipName2" type="string" eval="constant">DiscountGovernedByRule</Parameter>
+		<Parameter direction="in" name="RelationshipName3" type="string" eval="constant">DiscountRequiresCharacteristic</Parameter>
+		<Parameter direction="in" name="RelationshipName4" type="string" eval="constant">DiscountRequiresParty</Parameter>
+		<Parameter direction="in" name="RelationshipName5" type="string" eval="constant">DiscountRequiresProduct</Parameter>
+		<Parameter direction="in" name="RelationshipName6" type="string" eval="constant">DiscountRequiresProductGroup</Parameter>
+		<Parameter direction="in" name="RelationshipName7" type="string" eval="constant">DiscountRequiresSegment</Parameter>
+		<Parameter direction="in" name="RelationshipName8" type="string" eval="constant">GroupRequiresProducts</Parameter>
+		<Parameter direction="in" name="VersionOption" type="string" eval="constant">CONFIRMED</Parameter>
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="out" name="RecordsProcessed" type="long" eval="variable">recordsProcessed</Parameter>
+    </Activity>
+
+	<Activity Name="RuleModelSubset">
+		<Action>EvaluateSubset</Action>
+		<Description lang="en">Apply subset on Rule Model Data</Description>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">SUBSET</Parameter>
+		<Parameter name="NamedVersionPrefix" direction="in" eval="variable" type="string">SelectedNamedVersion</Parameter>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">RuleParameter</Parameter>
+		<Parameter direction="in" name="RelationshipName1" type="string" eval="constant">Condition</Parameter>
+		<Parameter direction="in" name="VersionOption" type="string" eval="constant">CONFIRMED</Parameter>
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="out" name="RecordsProcessed" type="long" eval="variable">recordsProcessed</Parameter>
+    </Activity>
+	
+	<Activity Name="CategoryModelSubset">
+		<Action>EvaluateSubset</Action>
+		<Description lang="en">Apply subset on Category Model Data</Description>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">SUBSET</Parameter>
+		<Parameter name="NamedVersionPrefix" direction="in" eval="variable" type="string">SelectedNamedVersion</Parameter>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">SubcategoryOf</Parameter>
+		<Parameter direction="in" name="VersionOption" type="string" eval="constant">CONFIRMED</Parameter>
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="out" name="RecordsProcessed" type="long" eval="variable">recordsProcessed</Parameter>
+    </Activity>
+		
+	<Activity Name="ProcessProductSubsetData">
+		<Action>ACModelPublish</Action>
+		<Description>Processes Product Model subset data</Description>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">WRITEFILES</Parameter>
+		<Parameter direction="in" name="InRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="in" name="recordCount" type="long" eval="variable">recordsProcessed</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="ProductModelMap">mpfromcatalogitemtobulkproductmodelv1.xsl</Parameter>
+		<Parameter direction="in" name="CatalogUseForFilter" type="string" eval="variable">CatalogUse</Parameter>
+		<Parameter direction="in" name="TypeOfPublish" type="string" eval="variable">PublishType</Parameter>
+		<Parameter direction="in" name="Tenant" type="string" eval="constant">TIBCO</Parameter>
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">CompatibleParty</Parameter>
+        <Parameter direction="in" name="RelationshipName1" type="string" eval="constant">ProductComprisedOf</Parameter>
+        <Parameter direction="in" name="RelationshipName2" type="string" eval="constant">Characteristic</Parameter>
+        <Parameter direction="in" name="RelationshipName3" type="string" eval="constant">CompatibleProduct</Parameter>
+		<Parameter direction="in" name="RelationshipName4" type="string" eval="constant">IncompatibleProduct</Parameter>
+        <Parameter direction="in" name="RelationshipName5" type="string" eval="constant">CompatibleSegment</Parameter>
+        <Parameter direction="in" name="RelationshipName6" type="string" eval="constant">IncompatibleSegment</Parameter>
+		<Parameter direction="in" name="RelationshipName7" type="string" eval="constant">CompatibleCharacteristic</Parameter>
+		<Parameter direction="in" name="RelationshipName8" type="string" eval="constant">IncompatibleCharacteristic</Parameter>		
+        <Parameter direction="in" name="RelationshipName9" type="string" eval="constant">IncompatibleParty</Parameter>
+        <Parameter direction="in" name="RelationshipName10" type="string" eval="constant">ProductPricedBy</Parameter>
+		<Parameter direction="in" name="RelationshipName11" type="string" eval="constant">ProductRequiredFor</Parameter>
+		<Parameter direction="in" name="RelationshipName12" type="string" eval="constant">ProductHasProvidePlanFragment</Parameter>
+		<Parameter direction="in" name="RelationshipName13" type="string" eval="constant">ProductHasUpdatePlanFragment</Parameter>
+		<Parameter direction="in" name="RelationshipName14" type="string" eval="constant">ProductHasCeasePlanFragment</Parameter>
+		<Parameter direction="in" name="RelationshipName15" type="string" eval="constant">ProductHasCancelPlanFragment</Parameter>
+		<Parameter direction="in" name="RelationshipName16" type="string" eval="constant">PlanFragmentHasMilestone</Parameter>
+		<Parameter direction="in" name="RelationshipName17" type="string" eval="constant">PriceRequiresSegment</Parameter>
+		<Parameter direction="in" name="RelationshipName18" type="string" eval="constant">ProductHasCustomPlanFragment</Parameter>
+		<Parameter direction="in" name="RelationshipName19" type="string" eval="constant">ProductDependsOn</Parameter>
+		<Parameter direction="in" name="RelationshipName20" type="string" eval="constant">ProductGovernedByRule</Parameter>
+		<Parameter direction="in" name="RelationshipName21" type="string" eval="constant">Category</Parameter>
+		<Parameter direction="in" name="RelationshipName22" type="string" eval="constant">ProductToMigrate</Parameter>
+		<!--Parameter direction="in" name="RelationshipName23" type="string" eval="constant">HasChannel</Parameter-->
+
+		<Parameter direction="in" name="Level2RelationshipName1" type="string" eval="constant">PlanFragmentHasMilestone</Parameter>
+        <Parameter direction="in" name="Level2RelationshipName2" type="string" eval="constant">ProductComprisedOf</Parameter>
+        <Parameter direction="in" name="Level2RelationshipName3" type="string" eval="constant">ProductRequiredFor</Parameter>
+		<Parameter direction="in" name="Level2RelationshipName4" type="string" eval="constant">ProductDependsOn</Parameter>
+        <Parameter direction="in" name="Level2RelationshipName5" type="string" eval="constant">PriceRequiresSegment</Parameter>
+		<Parameter direction="in" name="Level2RelationshipName6" type="string" eval="constant">Condition</Parameter>
+		<Parameter direction="in" name="Level2RelationshipName7" type="string" eval="constant">RuleParameter</Parameter>
+		<Parameter direction="in" name="Level2RelationshipName8" type="string" eval="constant">HasDataType</Parameter>
+
+        <Parameter direction="in" name="Level3RelationshipName1" type="string" eval="constant">MilestoneDependsOn</Parameter>
+	
+
+		
+		<Parameter direction="in" eval="constant" type="long" name="ProductModelBatchSize">1</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="ProductModelCatName">MsgSeqProductModel</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="publishAction">BULK</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="connShareMode">1</Parameter>
+		<Parameter direction="in" eval="constant" type="boolean" name="transacted">false</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="Channel" type="string" eval="constant">BOTH</Parameter>
+		<Parameter direction="in" name="logRawModel" type="boolean" eval="constant">FALSE</Parameter>
+		
+		<!-- If invoking the publish model through a process and not through UI, below line should be un-commented and the valid values are TRUE/FALSE-->
+		<!--Parameter direction="in" name="MetadataRequired" type="boolean" eval="constant">FALSE</Parameter-->
+		
+		<!-- The below line should be commented if publish model is triggered through a process and not through UI-->
+		<Parameter direction="in" name="MetadataRequired" type="boolean" eval="variable">metadataRequiredFlag</Parameter>
+		
+		<Parameter direction="in" name="FolderLocation" type="string" eval="variable">TempFolderLocation</Parameter>
+
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">productmodelprocessed</Parameter>
+	</Activity>
+
+	<Activity Name="ProcessCustomerSubsetData">
+		<Action>ACModelPublish</Action>
+		<Description>Processes Customer Model subset data</Description>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">WRITEFILES</Parameter>
+		<Parameter direction="in" name="InRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="in" name="recordCount" type="long" eval="variable">recordsProcessed</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="CustomerModelMap">mpfromcatalogitemtobulkcustomermodelv1.xsl</Parameter>
+		<Parameter direction="in" name="TypeOfPublish" type="string" eval="variable">PublishType</Parameter>
+		<Parameter direction="in" name="Tenant" type="string" eval="constant">TIBCO</Parameter>
+		<Parameter direction="in" name="ChildRelationshipName" type="string" eval="constant">DataForParty</Parameter>
+		<Parameter direction="in" name="ChildRelationshipName1" type="string" eval="constant">PartyHasData</Parameter>
+		<Parameter direction="in" name="ChildRelationshipName2" type="string" eval="constant">PartyHasSegment</Parameter>
+		<Parameter direction="in" name="ChildRelationshipName3" type="string" eval="constant">CompatibleProductForParty</Parameter>
+		<Parameter direction="in" name="ChildRelationshipName4" type="string" eval="constant">OrgIn</Parameter>
+		<Parameter direction="in" name="ChildRelationshipName5" type="string" eval="constant">HasPeople</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="CustomerModelBatchSize">1</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="CustomerModelCatName">MsgSeqCustomerModel</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="publishAction">BULK</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="connShareMode">1</Parameter>
+		<Parameter direction="in" eval="constant" type="boolean" name="transacted">false</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="Channel" type="string" eval="constant">BOTH</Parameter>
+		<Parameter direction="in" name="logRawModel" type="boolean" eval="constant">TRUE</Parameter>
+		
+		<!-- If invoking the publish model through a process and not through UI, below line should be un-commented and the valid values are TRUE/FALSE-->
+		<!--Parameter direction="in" name="MetadataRequired" type="boolean" eval="constant">FALSE</Parameter-->
+		
+		<!-- The below line should be commented if publish model is triggered through a process and not through UI-->
+		<Parameter direction="in" name="MetadataRequired" type="boolean" eval="variable">metadataRequiredFlag</Parameter>
+		
+		<Parameter direction="in" name="FolderLocation" type="string" eval="variable">TempFolderLocation</Parameter>
+
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">customermodelprocessed</Parameter>
+	</Activity>
+
+	<Activity Name="ProcessSegmentSubsetData">
+		<Action>ACModelPublish</Action>
+		<Description>Processes Segment Model subset data</Description>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">WRITEFILES</Parameter>
+		<Parameter direction="in" name="InRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="in" name="recordCount" type="long" eval="variable">recordsProcessed</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="SegmentModelMap">mpfromcatalogitemtobulksegmentmodelv1.xsl</Parameter>
+		<Parameter direction="in" name="Tenant" type="string" eval="constant">TIBCO</Parameter>
+		<Parameter direction="in" name="TypeOfPublish" type="string" eval="variable">PublishType</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="SegmentModelBatchSize">1</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="SegmentModelCatName">MsgSeqSegmentModel</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="publishAction">BULK</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="connShareMode">1</Parameter>
+		<Parameter direction="in" eval="constant" type="boolean" name="transacted">false</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="Channel" type="string" eval="constant">BOTH</Parameter>
+		<Parameter direction="in" name="logRawModel" type="boolean" eval="constant">TRUE</Parameter>
+		<!-- If invoking the publish model through a process and not through UI, below line should be un-commented and the valid values are TRUE/FALSE-->
+		<!--Parameter direction="in" name="MetadataRequired" type="boolean" eval="constant">FALSE</Parameter-->
+		
+		<!-- The below line should be commented if publish model is triggered through a process and not through UI-->
+		<Parameter direction="in" name="MetadataRequired" type="boolean" eval="variable">metadataRequiredFlag</Parameter>
+		
+		<Parameter direction="in" name="FolderLocation" type="string" eval="variable">TempFolderLocation</Parameter>
+
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">segmentmodelprocessed</Parameter>	
+	</Activity>
+
+	<Activity Name="ProcessPlanFragmentSubsetData">
+		<Action>ACModelPublish</Action>
+		<Description>Processes Plan Fragment Model subset data</Description>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">WRITEFILES</Parameter>
+		<Parameter direction="in" name="InRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="in" name="recordCount" type="long" eval="variable">recordsProcessed</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="PlanFragmentModelMap">mpfromcatalogitemtoplanfragmentmodelv1.xsl</Parameter>
+		<Parameter direction="in" name="Tenant" type="string" eval="constant">TIBCO</Parameter>
+		<Parameter direction="in" name="TypeOfPublish" type="string" eval="variable">PublishType</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="PlanFragmentModelBatchSize">1</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="PlanFragmentModelCatName">MsgSeqPlanFragmentModel</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="publishAction">BULK</Parameter>
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">PlanfragmentHasMilestone</Parameter>
+		<Parameter direction="in" name="RelationshipName1" type="string" eval="constant">MilestoneToMilestone</Parameter>
+		<Parameter direction="in" name="RelationshipName2" type="string" eval="constant">CompensatedBy</Parameter>
+		<Parameter direction="in" name="RelationshipName3" type="string" eval="constant">RedoneBy</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="connShareMode">1</Parameter>
+		<Parameter direction="in" eval="constant" type="boolean" name="transacted">false</Parameter>
+		<Parameter direction="in" name="Channel" type="string" eval="constant">BOTH</Parameter>
+		<Parameter direction="in" name="logRawModel" type="boolean" eval="constant">TRUE</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<!-- If invoking the publish model through a process and not through UI, below line should be un-commented and the valid values are TRUE/FALSE-->
+		<!--Parameter direction="in" name="MetadataRequired" type="boolean" eval="constant">FALSE</Parameter-->
+		
+		<!-- The below line should be commented if publish model is triggered through a process and not through UI-->
+		<Parameter direction="in" name="MetadataRequired" type="boolean" eval="variable">metadataRequiredFlag</Parameter>
+		
+		<Parameter direction="in" name="FolderLocation" type="string" eval="variable">TempFolderLocation</Parameter>
+
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">planfragmentmodelprocessed</Parameter>
+	</Activity>
+
+	<Activity Name="ProcessActionSubsetData">
+		<Action>ACModelPublish</Action>
+		<Description>Processes Action Model subset data</Description>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">WRITEFILES</Parameter>
+		<Parameter direction="in" name="InRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="in" name="recordCount" type="long" eval="variable">recordsProcessed</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="ActionModelMap">mpfromcatalogitemtoactionmodelv1.xsl</Parameter>
+		<Parameter direction="in" name="Tenant" type="string" eval="constant">TIBCO</Parameter>
+		<Parameter direction="in" name="TypeOfPublish" type="string" eval="variable">PublishType</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="ActionModelBatchSize">1</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="ActionModelCatName">MsgSeqActionModel</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="publishAction">BULK</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="connShareMode">1</Parameter>
+		<Parameter direction="in" eval="constant" type="boolean" name="transacted">false</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="Channel" type="string" eval="constant">BOTH</Parameter>
+		<Parameter direction="in" name="logRawModel" type="boolean" eval="constant">TRUE</Parameter>
+		
+		<!-- If invoking the publish model through a process and not through UI, below line should be un-commented and the valid values are TRUE/FALSE-->
+		<!--Parameter direction="in" name="MetadataRequired" type="boolean" eval="constant">FALSE</Parameter-->
+		
+		<!-- The below line should be commented if publish model is triggered through a process and not through UI-->
+		<Parameter direction="in" name="MetadataRequired" type="boolean" eval="variable">metadataRequiredFlag</Parameter>
+		
+		<Parameter direction="in" name="FolderLocation" type="string" eval="variable">TempFolderLocation</Parameter>
+
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">actionmodelprocessed</Parameter>	
+	</Activity>
+
+	<Activity Name="ProcessPriceSubsetData">
+		<Action>ACModelPublish</Action>
+		<Description>Processes Price Model subset data</Description>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">WRITEFILES</Parameter>
+		<Parameter direction="in" name="InRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="in" name="recordCount" type="long" eval="variable">recordsProcessed</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="PriceModelMap">mpfromcatalogitemtopricemodelv1.xsl</Parameter>
+		<Parameter direction="in" name="Tenant" type="string" eval="constant">TIBCO</Parameter>
+		<Parameter direction="in" name="TypeOfPublish" type="string" eval="variable">PublishType</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="PriceModelBatchSize">1</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="PriceModelCatName">MsgSeqPriceModel</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="publishAction">BULK</Parameter>
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">CharacteristicCharge</Parameter>
+		<Parameter direction="in" name="RelationshipName1" type="string" eval="constant">PriceAlteredByAllowance</Parameter>
+		<Parameter direction="in" name="RelationshipName2" type="string" eval="constant">PriceAlteredByDiscount</Parameter>
+		<Parameter direction="in" name="RelationshipName3" type="string" eval="constant">PriceComprisedOf</Parameter>
+		<Parameter direction="in" name="RelationshipName4" type="string" eval="constant">PriceGovernedByRule</Parameter>
+		<Parameter direction="in" name="RelationshipName5" type="string" eval="constant">PriceRequiresCharacteristic</Parameter>
+		<Parameter direction="in" name="RelationshipName6" type="string" eval="constant">PriceRequiresParty</Parameter>
+		<Parameter direction="in" name="RelationshipName7" type="string" eval="constant">PriceRequiresProduct</Parameter>
+		<Parameter direction="in" name="RelationshipName8" type="string" eval="constant">PriceRequiresProductGroup</Parameter>
+		<Parameter direction="in" name="RelationshipName9" type="string" eval="constant">PriceRequiresSegment</Parameter>
+		<Parameter direction="in" name="RelationshipName10" type="string" eval="constant">PriceGovernedBy</Parameter>
+        <Parameter direction="in" name="Level2RelationshipName1" type="string" eval="constant">PriceComprisedOf</Parameter>
+		<Parameter direction="in" name="Level2RelationshipName2" type="string" eval="constant">GroupRequiresProducts</Parameter>
+		<Parameter direction="in" name="Level2RelationshipName3" type="string" eval="constant">DiscountRequiresSegment</Parameter>		
+		<Parameter direction="in" eval="constant" type="long" name="connShareMode">1</Parameter>
+		<Parameter direction="in" eval="constant" type="boolean" name="transacted">false</Parameter>
+		<Parameter direction="in" name="Channel" type="string" eval="constant">BOTH</Parameter>
+		<Parameter direction="in" name="logRawModel" type="boolean" eval="constant">TRUE</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		
+		<!-- If invoking the publish model through a process and not through UI, below line should be un-commented and the valid values are TRUE/FALSE-->
+		<!--Parameter direction="in" name="MetadataRequired" type="boolean" eval="constant">FALSE</Parameter-->
+		
+		<!-- The below line should be commented if publish model is triggered through a process and not through UI-->
+		<Parameter direction="in" name="MetadataRequired" type="boolean" eval="variable">metadataRequiredFlag</Parameter>
+		
+		<Parameter direction="in" name="FolderLocation" type="string" eval="variable">TempFolderLocation</Parameter>
+
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">pricemodelprocessed</Parameter>
+	</Activity>
+	
+	<Activity Name="ProcessDiscountSubsetData">
+		<Action>ACModelPublish</Action>
+		<Description>Processes Discount Model subset data</Description>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">WRITEFILES</Parameter>
+		<Parameter direction="in" name="InRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="in" name="recordCount" type="long" eval="variable">recordsProcessed</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="DiscountModelMap">mpfromcatalogitemtodiscountmodelv1.xsl</Parameter>
+		<Parameter direction="in" name="Tenant" type="string" eval="constant">TIBCO</Parameter>
+		<Parameter direction="in" name="TypeOfPublish" type="string" eval="variable">PublishType</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="DiscountModelBatchSize">1</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="DiscountModelCatName">MsgSeqDiscountModel</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="publishAction">BULK</Parameter>
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">DiscountComprisedOf</Parameter>
+		<Parameter direction="in" name="RelationshipName1" type="string" eval="constant">DiscountGovernedBy</Parameter>
+		<Parameter direction="in" name="RelationshipName2" type="string" eval="constant">DiscountGovernedByRule</Parameter>
+		<Parameter direction="in" name="RelationshipName3" type="string" eval="constant">DiscountRequiresCharacteristic</Parameter>
+		<Parameter direction="in" name="RelationshipName4" type="string" eval="constant">PriceGovernedBy</Parameter>
+		<Parameter direction="in" name="RelationshipName5" type="string" eval="constant">DiscountRequiresParty</Parameter>
+		<Parameter direction="in" name="RelationshipName6" type="string" eval="constant">DiscountRequiresProduct</Parameter>
+		<Parameter direction="in" name="RelationshipName7" type="string" eval="constant">DiscountRequiresProductGroup</Parameter>
+		<Parameter direction="in" name="RelationshipName8" type="string" eval="constant">DiscountRequiresSegment</Parameter>
+        <Parameter direction="in" name="Level2RelationshipName1" type="string" eval="constant">DiscountComprisedOf</Parameter>
+        <Parameter direction="in" name="Level2RelationshipName2" type="string" eval="constant">GroupRequiresProducts</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="connShareMode">1</Parameter>
+		<Parameter direction="in" eval="constant" type="boolean" name="transacted">false</Parameter>
+		<Parameter direction="in" name="Channel" type="string" eval="constant">BOTH</Parameter>
+		<Parameter direction="in" name="logRawModel" type="boolean" eval="constant">TRUE</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		
+		<!-- If invoking the publish model through a process and not through UI, below line should be un-commented and the valid values are TRUE/FALSE-->
+		<!--Parameter direction="in" name="MetadataRequired" type="boolean" eval="constant">FALSE</Parameter-->
+		
+		<!-- The below line should be commented if publish model is triggered through a process and not through UI-->
+		<Parameter direction="in" name="MetadataRequired" type="boolean" eval="variable">metadataRequiredFlag</Parameter>
+		
+		<Parameter direction="in" name="FolderLocation" type="string" eval="variable">TempFolderLocation</Parameter>
+
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">discountmodelprocessed</Parameter>
+	</Activity>
+
+	<Activity Name="ProcessRuleSubsetData">
+		<Action>ACModelPublish</Action>
+		<Description>Processes Rule Model subset data</Description>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">WRITEFILES</Parameter>
+		<Parameter direction="in" name="InRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="in" name="recordCount" type="long" eval="variable">recordsProcessed</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="RuleModelMap">mpfromcatalogitemtorulemodelv1.xsl</Parameter>
+		<Parameter direction="in" name="Tenant" type="string" eval="constant">TIBCO</Parameter>
+		<Parameter direction="in" name="TypeOfPublish" type="string" eval="variable">PublishType</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="RuleModelBatchSize">1</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="RuleModelCatName">MsgSeqRuleModel</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="publishAction">BULK</Parameter>
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">RuleParameter</Parameter>
+		<Parameter direction="in" name="RelationshipName1" type="string" eval="constant">Condition</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="connShareMode">1</Parameter>
+		<Parameter direction="in" eval="constant" type="boolean" name="transacted">false</Parameter>
+		<Parameter direction="in" name="Channel" type="string" eval="constant">BOTH</Parameter>
+		<Parameter direction="in" name="logRawModel" type="boolean" eval="constant">TRUE</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		
+		<!-- If invoking the publish model through a process and not through UI, below line should be un-commented and the valid values are TRUE/FALSE-->
+		<!--Parameter direction="in" name="MetadataRequired" type="boolean" eval="constant">FALSE</Parameter-->
+		
+		<!-- The below line should be commented if publish model is triggered through a process and not through UI-->
+		<Parameter direction="in" name="MetadataRequired" type="boolean" eval="variable">metadataRequiredFlag</Parameter>
+		
+		<Parameter direction="in" name="FolderLocation" type="string" eval="variable">TempFolderLocation</Parameter>
+
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">rulemodelprocessed</Parameter>
+	</Activity>	
+	
+	<Activity Name="ProcessCategorySubsetData">
+		<Action>ACModelPublish</Action>
+		<Description>Processes Category Model subset data</Description>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">WRITEFILES</Parameter>
+		<Parameter direction="in" name="InRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="in" name="recordCount" type="long" eval="variable">recordsProcessed</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="CategoryModelMap">mpfromcatalogitemtocategorymodelv1.xsl</Parameter>
+		<Parameter direction="in" name="Tenant" type="string" eval="constant">TIBCO</Parameter>
+		<Parameter direction="in" name="TypeOfPublish" type="string" eval="variable">PublishType</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="CategoryModelBatchSize">1</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="CategoryModelCatName">MsgSeqCategoryModel</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="publishAction">BULK</Parameter>
+		<Parameter direction="in" name="RelationshipName" type="string" eval="constant">SubcategoryOf</Parameter>
+		<Parameter direction="in" eval="constant" type="long" name="connShareMode">1</Parameter>
+		<Parameter direction="in" eval="constant" type="boolean" name="transacted">false</Parameter>
+		<Parameter direction="in" name="Channel" type="string" eval="constant">BOTH</Parameter>
+		<Parameter direction="in" name="logRawModel" type="boolean" eval="constant">TRUE</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		
+		<!-- If invoking the publish model through a process and not through UI, below line should be un-commented and the valid values are TRUE/FALSE-->
+		<!--Parameter direction="in" name="MetadataRequired" type="boolean" eval="constant">FALSE</Parameter-->
+		
+		<!-- The below line should be commented if publish model is triggered through a process and not through UI-->
+		<Parameter direction="in" name="MetadataRequired" type="boolean" eval="variable">metadataRequiredFlag</Parameter>
+		
+		<Parameter direction="in" name="FolderLocation" type="string" eval="variable">TempFolderLocation</Parameter>
+
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">categorymodelprocessed</Parameter>
+	</Activity>	
+	
+	 <Activity Name="PublishMetaData">
+			<Action>PublishMetaData</Action>
+			<Description>Publishes the Metadata for the catalog</Description>
+			<Execution>SYNCHR</Execution>		
+			<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+			<Parameter direction="in" name="FolderLocation" type="string" eval="variable">TempFolderLocation</Parameter>
+	 </Activity>
+	 
+	 <Activity Name="GetRecordWithModifiedDeletedRelationship">
+		<Action>FCGetRecordWithModifiedDeletedRelationship</Action>
+		<Description lang="en">Get records whose relationships have been deleted/modified</Description>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter direction="in" name="InRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+		<Parameter direction="in" eval="variable" type="string" name="FromTimeStamp">FromTimestmap</Parameter>
+		<Parameter direction="in" eval="variable" type="string" name="ToTimeStamp">ToTimestmap</Parameter>
+		<Parameter direction="out" name="OutRecordList" type="recordlist" eval="variable">workRecord_List</Parameter>
+	 </Activity>
+	 
+	 <Activity Name="DownloadZipFile">
+			<Action>CreateAndDownloadZip</Action>
+			<Description>Create and download zip file</Description>
+			<Execution>SYNCHR</Execution>		
+			<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+			<Parameter direction="in" name="SourceDirectoryPath" type="string" eval="variable">TempFolderLocation</Parameter>
+			<Parameter direction="in" name="ZipFileNamePrefix" type="string" eval="variable">PrefixForZipFileName</Parameter>
+			<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="DeleteSourceDir" type="boolean" eval="variable">TRUE</Parameter>
+	 </Activity>
+	 
+	 <Activity Name="CreateNamedVersion">
+		<Action>CreateNamedVersion</Action>
+		<Description>Create named version after publish is successful</Description>
+		<Execution>SYNCHR</Execution>
+		<Parameter direction="in" name="InDocument" type="document" eval="variable">inDoc</Parameter>
+		<Parameter direction="in" eval="xpath" type="string" name="MasterCatalog" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+		<Parameter name="Name" direction="in" eval="variable" type="string">NamedVersionToCreate</Parameter>
+		<Parameter name="NamedVersionTimestamp" direction="in" eval="variable" type="string">ToTimestmap</Parameter>
+	</Activity>
+
+	 <Activity Name="SetStatusToSuccess">
+		<Action>UpdateEvent</Action>
+		<Description lang="en">Set the event status to Success/Done</Description>
+		<Parameter direction="in" name="eventStatus" type="string" eval="constant">SUCCESS</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">DONE</Parameter>
+	</Activity>
+
+	<Activity Name="SetStatusToError">
+		<Action>UpdateEvent</Action>
+		<Description lang="en">Set the event status to Error/Done</Description>
+		<Parameter direction="in" name="eventStatus" type="string" eval="constant">ERROR</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">DONE</Parameter>
+	</Activity>
+		
+	<Activity Name="SetRepositoryInvalidError">
+		<Action>UpdateEvent</Action>
+		<Description lang="en">Repository is not valid</Description>
+		<Parameter direction="in" name="eventStatus" type="string" eval="constant">ERROR</Parameter>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">DONE</Parameter>
+	</Activity>
+
+	<Activity Name="RejectDueToWorkflowError">
+		<Action>Send</Action>
+		<Description lang="en">Error occured during workflow processing</Description>
+		<Execution>ASYNCHR</Execution>
+		<Parameter direction="in" type="string" eval="constant" name="eventState">REJECTDUETOWFERROR</Parameter>
+		<Parameter direction="in" eval="rule" source="Message or Workflow Completion" type="string" name="Protocol">inDoc</Parameter>
+		<Parameter direction="in" eval="rule" source="Message or Workflow Completion" type="long" name="Address">inDoc</Parameter>
+		<Parameter direction="in" name="Sender" type="string" eval="constant">support@tibco.com</Parameter>
+		<Parameter direction="in" name="Presentation" type="string" eval="constant">com.tibco.mdm.ui.workflow.engine.emailtemplates.EmailUploadImportWorkflowError</Parameter>
+		<Parameter direction="in" eval="constant" type="string" name="Form">standard/forms/fm26ca.xml</Parameter>
+		<Parameter direction="in" type="document" eval="variable" name="InDocument">inDoc</Parameter>
+	</Activity> 
+
+	<!-- Based pn catalog name, below evalualte subset activity should be invoked -->
+	<Transition FromActivity="AddMsgInfoToEvent" ToActivity="SelectModel"/>
+	<Transition FromActivity="SelectModel" ToActivity="ComputeExportFileDirectory"/>
+	<Transition FromActivity="ComputeExportFileDirectory" ToActivity="ProductModelSubset">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">PRODUCT</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+
+	<Transition FromActivity="ComputeExportFileDirectory" ToActivity="CustomerModelSubset">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">PARTY</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+
+	<Transition FromActivity="ComputeExportFileDirectory" ToActivity="SegmentModelSubset">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">SEGMENT</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+
+	<Transition FromActivity="ComputeExportFileDirectory" ToActivity="PlanFragmentModelSubset">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">PLANFRAGMENT</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+
+	<Transition FromActivity="ComputeExportFileDirectory" ToActivity="ActionModelSubset">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">ACTION</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+
+	<Transition FromActivity="ComputeExportFileDirectory" ToActivity="PriceModelSubset">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">PRICE</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="ComputeExportFileDirectory" ToActivity="DiscountModelSubset">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">DISCOUNT</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="ComputeExportFileDirectory" ToActivity="RuleModelSubset">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">RULE</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>	
+	
+	<Transition FromActivity="ComputeExportFileDirectory" ToActivity="CategoryModelSubset">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">CATEGORY</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>		
+	
+	<Transition FromActivity="ProductModelSubset" ToActivity="GetRecordWithModifiedDeletedRelationship">
+		<Rule>
+			<Parameter name="PType" direction="in" type="string" eval="variable">PublishType</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">DeltaPublish</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(PType, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="GetRecordWithModifiedDeletedRelationship" ToActivity="EvaluateRuleBase"/>
+	
+	<Transition FromActivity="ProductModelSubset" ToActivity="EvaluateRuleBase"/>
+	
+	<Transition FromActivity="EvaluateRuleBase" ToActivity="ProcessProductSubsetData">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">PRODUCT</Parameter>			
+			<Parameter direction="in" name="inputParamString1" eval="variable" type="recordList">workRecord_List</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh"><![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.isNotNullOrEmpty(inputParamString1)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="CustomerModelSubset" ToActivity="GetRecordWithModifiedDeletedRelationship">
+		<Rule>
+			<Parameter name="PType" direction="in" type="string" eval="variable">PublishType</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">DeltaPublish</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(PType, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	 
+	
+	<Transition FromActivity="CustomerModelSubset" ToActivity="EvaluateRuleBase"/>
+	
+	<Transition FromActivity="EvaluateRuleBase" ToActivity="ProcessCustomerSubsetData">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">PARTY</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="variable" type="recordList">workRecord_List</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh"><![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.isNotNullOrEmpty(inputParamString1)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="SegmentModelSubset" ToActivity="GetRecordWithModifiedDeletedRelationship">
+	<Rule>
+			<Parameter name="PType" direction="in" type="string" eval="variable">PublishType</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">DeltaPublish</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(PType, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	 
+	<Transition FromActivity="SegmentModelSubset" ToActivity="EvaluateRuleBase"/>
+	
+	<Transition FromActivity="EvaluateRuleBase" ToActivity="ProcessSegmentSubsetData">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">SEGMENT</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="variable" type="recordList">workRecord_List</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh"><![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.isNotNullOrEmpty(inputParamString1)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="PlanFragmentModelSubset" ToActivity="GetRecordWithModifiedDeletedRelationship">
+	<Rule>
+			<Parameter name="PType" direction="in" type="string" eval="variable">PublishType</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">DeltaPublish</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(PType, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	<Transition FromActivity="PlanFragmentModelSubset" ToActivity="EvaluateRuleBase"/>
+	
+	<Transition FromActivity="EvaluateRuleBase" ToActivity="ProcessPlanFragmentSubsetData">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">PLANFRAGMENT</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="variable" type="recordList">workRecord_List</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh"><![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.isNotNullOrEmpty(inputParamString1)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="ActionModelSubset" ToActivity="GetRecordWithModifiedDeletedRelationship">
+	<Rule>
+			<Parameter name="PType" direction="in" type="string" eval="variable">PublishType</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">DeltaPublish</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(PType, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="ActionModelSubset" ToActivity="EvaluateRuleBase"/>
+	
+	<Transition FromActivity="EvaluateRuleBase" ToActivity="ProcessActionSubsetData">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">ACTION</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="variable" type="recordList">workRecord_List</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh"><![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.isNotNullOrEmpty(inputParamString1)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="PriceModelSubset" ToActivity="GetRecordWithModifiedDeletedRelationship">
+		<Rule>
+			<Parameter name="PType" direction="in" type="string" eval="variable">PublishType</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">DeltaPublish</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(PType, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="PriceModelSubset" ToActivity="EvaluateRuleBase"/>
+	
+	<Transition FromActivity="EvaluateRuleBase" ToActivity="ProcessPriceSubsetData">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">PRICE</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="variable" type="recordList">workRecord_List</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh"><![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.isNotNullOrEmpty(inputParamString1)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="DiscountModelSubset" ToActivity="GetRecordWithModifiedDeletedRelationship">
+		<Rule>
+			<Parameter name="PType" direction="in" type="string" eval="variable">PublishType</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">DeltaPublish</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(PType, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	<Transition FromActivity="DiscountModelSubset" ToActivity="EvaluateRuleBase"/>
+	
+	
+	<Transition FromActivity="EvaluateRuleBase" ToActivity="ProcessDiscountSubsetData">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">DISCOUNT</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="variable" type="recordList">workRecord_List</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh"><![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.isNotNullOrEmpty(inputParamString1)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="RuleModelSubset" ToActivity="GetRecordWithModifiedDeletedRelationship">
+		<Rule>
+			<Parameter name="PType" direction="in" type="string" eval="variable">PublishType</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">DeltaPublish</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(PType, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="RuleModelSubset" ToActivity="EvaluateRuleBase"/>
+	
+	<Transition FromActivity="EvaluateRuleBase" ToActivity="ProcessRuleSubsetData">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">RULE</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="variable" type="recordList">workRecord_List</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh"><![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.isNotNullOrEmpty(inputParamString1)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	</Transition>	
+	
+	<Transition FromActivity="CategoryModelSubset" ToActivity="GetRecordWithModifiedDeletedRelationship">
+		<Rule>
+			<Parameter name="PType" direction="in" type="string" eval="variable">PublishType</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">DeltaPublish</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(PType, inputParamString);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="CategoryModelSubset" ToActivity="EvaluateRuleBase"/>
+	
+	<Transition FromActivity="EvaluateRuleBase" ToActivity="ProcessCategorySubsetData">
+		<Rule>
+			<Parameter name="MasterCatalog" direction="in" type="string" eval="xpath" source="/Message/Body/Document/BusinessDocument/CatalogAction/CatalogActionHeader/MasterCatalog/RevisionID/BaseName/text()">inDoc</Parameter>
+			<Parameter direction="in" name="inputParamString" eval="constant" type="string">CATEGORY</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="variable" type="recordList">workRecord_List</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh"><![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsIgnoreCase(MasterCatalog, inputParamString)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.isNotNullOrEmpty(inputParamString1)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	</Transition>	
+	
+	
+	<Transition FromActivity="ComputeExportFileDirectory" ToActivity="SetRepositoryInvalidError"/>
+	
+     <!-- Transition form Process*****SubsetData to PublishMetadata --> 
+	<Transition FromActivity="ProcessProductSubsetData" ToActivity="PublishMetaData">
+		<Rule>
+			<Parameter name="MetaDataReq" direction="in" type="boolean" eval="variable">MetadataRequired</Parameter>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh">
+			<![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.setToBoolean(MetaDataReq)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	 </Transition>
+	 <Transition FromActivity="ProcessCustomerSubsetData" ToActivity="PublishMetaData">
+		<Rule>
+			<Parameter name="MetaDataReq" direction="in" type="boolean" eval="variable">MetadataRequired</Parameter>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh">
+			<![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.setToBoolean(MetaDataReq)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	 </Transition>
+	 <Transition FromActivity="ProcessSegmentSubsetData" ToActivity="PublishMetaData">
+		<Rule>
+			<Parameter name="MetaDataReq" direction="in" type="boolean" eval="variable">MetadataRequired</Parameter>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh">
+			<![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.setToBoolean(MetaDataReq)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	 </Transition>
+	 <Transition FromActivity="ProcessPlanFragmentSubsetData" ToActivity="PublishMetaData">
+		<Rule>
+			<Parameter name="MetaDataReq" direction="in" type="boolean" eval="variable">MetadataRequired</Parameter>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh">
+			<![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.setToBoolean(MetaDataReq)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	 </Transition>
+	 <Transition FromActivity="ProcessActionSubsetData" ToActivity="PublishMetaData">
+		<Rule>
+			<Parameter name="MetaDataReq" direction="in" type="boolean" eval="variable">MetadataRequired</Parameter>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh">
+			<![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.setToBoolean(MetaDataReq)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	 </Transition>
+	 <Transition FromActivity="ProcessPriceSubsetData" ToActivity="PublishMetaData">
+		<Rule>
+			<Parameter name="MetaDataReq" direction="in" type="boolean" eval="variable">MetadataRequired</Parameter>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh">
+			<![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.setToBoolean(MetaDataReq)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	 </Transition>
+	 
+	  <Transition FromActivity="ProcessDiscountSubsetData" ToActivity="PublishMetaData">
+		<Rule>
+			<Parameter name="MetaDataReq" direction="in" type="boolean" eval="variable">MetadataRequired</Parameter>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh">
+			<![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.setToBoolean(MetaDataReq)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	 </Transition>
+	 
+	  <Transition FromActivity="ProcessRuleSubsetData" ToActivity="PublishMetaData">
+		<Rule>
+			<Parameter name="MetaDataReq" direction="in" type="boolean" eval="variable">MetadataRequired</Parameter>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh">
+			<![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.setToBoolean(MetaDataReq)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	 </Transition>	 
+	 
+	  <Transition FromActivity="ProcessCategorySubsetData" ToActivity="PublishMetaData">
+		<Rule>
+			<Parameter name="MetaDataReq" direction="in" type="boolean" eval="variable">MetadataRequired</Parameter>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="bsh">
+			<![CDATA[
+					if(com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.setToBoolean(MetaDataReq)){
+						if (com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2)){
+							result = true ;
+						}
+						else{
+							result = false ;
+						}
+					}
+					else{
+						result = false ;
+					}
+                ]]>
+			</Condition>
+		</Rule>
+	 </Transition>	 	 
+
+	<!-- Transition form Process*****SubsetData to DownloadZipFile --> 
+	<Transition FromActivity="ProcessProductSubsetData" ToActivity="DownloadZipFile">
+		<Rule>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	<Transition FromActivity="ProcessCustomerSubsetData" ToActivity="DownloadZipFile">
+		<Rule>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	<Transition FromActivity="ProcessSegmentSubsetData" ToActivity="DownloadZipFile">
+		<Rule>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	<Transition FromActivity="ProcessPlanFragmentSubsetData" ToActivity="DownloadZipFile">
+		<Rule>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	<Transition FromActivity="ProcessActionSubsetData" ToActivity="DownloadZipFile">
+			<Rule>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2);
+					]]></Condition>
+		</Rule>
+	</Transition> 
+	<Transition FromActivity="ProcessPriceSubsetData" ToActivity="DownloadZipFile">
+			<Rule>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2);
+					]]></Condition>
+		</Rule>
+	</Transition>
+
+	<Transition FromActivity="ProcessDiscountSubsetData" ToActivity="DownloadZipFile">
+			<Rule>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="ProcessRuleSubsetData" ToActivity="DownloadZipFile">
+			<Rule>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2);
+					]]></Condition>
+		</Rule>
+	</Transition>	
+	
+	<Transition FromActivity="ProcessCategorySubsetData" ToActivity="DownloadZipFile">
+			<Rule>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2);
+					]]></Condition>
+		</Rule>
+	</Transition>
+	
+	<Transition FromActivity="PublishMetaData" ToActivity="DownloadZipFile">
+		<Rule>
+			<Parameter name="ChannelToPublish" direction="in" type="string" eval="variable">Channel</Parameter>
+			<Parameter direction="in" name="inputParamString1" eval="constant" type="string">FILE</Parameter>
+			<Parameter direction="in" name="inputParamString2" eval="constant" type="string">BOTH</Parameter>
+			<Parameter name="result" type="boolean" direction="out"/>
+			<Condition format="java"><![CDATA[
+				com.tibco.mdm.workflow.engine.transition.WfSharedConditionTransition.equalsEitherString(ChannelToPublish, inputParamString1,inputParamString2);
+					]]></Condition>
+		</Rule>
+	</Transition>
+
+	<Transition FromActivity="DownloadZipFile" ToActivity="CreateNamedVersion"/>
+    <Transition FromActivity="ProcessProductSubsetData" ToActivity="CreateNamedVersion"/>
+	<Transition FromActivity="ProcessCustomerSubsetData" ToActivity="CreateNamedVersion"/>
+	<Transition FromActivity="ProcessSegmentSubsetData" ToActivity="CreateNamedVersion"/>
+	<Transition FromActivity="ProcessPlanFragmentSubsetData" ToActivity="CreateNamedVersion"/>
+	<Transition FromActivity="ProcessActionSubsetData" ToActivity="CreateNamedVersion"/>
+	<Transition FromActivity="ProcessPriceSubsetData" ToActivity="CreateNamedVersion"/>
+	<Transition FromActivity="ProcessDiscountSubsetData" ToActivity="CreateNamedVersion"/>
+	<Transition FromActivity="ProcessRuleSubsetData" ToActivity="CreateNamedVersion"/>
+	<Transition FromActivity="ProcessCategorySubsetData" ToActivity="CreateNamedVersion"/>
+	
+	<Transition FromActivity="EvaluateRuleBase" ToActivity="CreateNamedVersion"/>	
+		
+	<Transition FromActivity="CreateNamedVersion" ToActivity="SetStatusToSuccess"/>		
+	<Transition type="error" FromActivity="Any" ToActivity="RejectDueToWorkflowError"/>
+	<Transition FromActivity="RejectDueToWorkflowError" ToActivity="SetStatusToError"/>
+			  
+</Workflow>
+<!-- Copyright (c) 2018-2018 TIBCO Software Inc. All Rights Reserved. Confidential & Proprietary. -->

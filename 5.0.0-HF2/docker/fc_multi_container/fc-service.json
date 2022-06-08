@@ -1,0 +1,29 @@
+{
+   "apiVersion": "v1",
+   "kind": "Service",
+   "metadata": {
+      "name": "fc",
+	  "namespace":"default",
+	  "labels": {
+		"app": "fc",
+		"tier": "fc-instance",
+		"version": "5.0.0",
+		"release" : "stable"
+     }
+   },
+   "spec": {
+      "selector": {
+         "app": "fc",
+         "tier": "fc-instance"
+      },
+      "type": "LoadBalancer",
+      "ports": [
+         {
+            "name": "http-fc",
+            "protocol": "TCP",
+            "port": 9080,
+            "targetPort": 8080
+         }
+		]
+   }
+}

@@ -1,0 +1,113 @@
+app:
+  name: psc
+  version: 5.0.0
+environment: dev
+extraEnv:
+  CONFIG_FLAG: true
+  INIT_FLAG: false
+  env_ems_svc: ems-svc.messaging.svc.cluster.local
+  env_ems_svc_port: 30722
+  MQ_NODE_TYPE: PSC_NODE
+  MQ_INIT_MDM: 'true'
+  MQ_INIT_JBOSS: 'true'
+  FC_MULTI_DEPLOY: 'true'
+  MQ_START_MDM: 'true'
+  MQ_ON_TROPOS: 'true'
+  MQ_ALL_IN_ONE_MODE: 'false'
+  FC_START_OPD: 'false'
+  MQ_START_PATTERNS: 'false'
+  FC_START_CONFIG: 'true'
+  MQ_MDM_DB_TYPE: POSTGRES
+  MQ_MDM_DB_HOST: <db_hostname_or_ip>
+  MQ_MDM_DB_PORT: <db_port>
+  MQ_MDM_DB_NAME: <db_name>
+  MQ_MDM_DB_SCHEMA: <mdm_schema_name>
+  MQ_MDM_DB_MIN_CONN_COUNT: 20
+  MQ_MDM_DB_MAX_CONN_COUNT: 250
+  MQ_MDM_DB_IGN_MIN_CONN_COUNT: 1
+  MQ_MDM_DB_IGN_MAX_CONN_COUNT: 10
+  EMS_SERVER_URL: tcp://ems-svc.messaging.svc.cluster.local:30722
+  FC_SERVICE_HOST: psc-svc.psc.svc.cluster.local
+  FC_SERVICE_PORT: 8080
+  FC_SERVICE_FLAG: true
+  OPD_APP_DATA_VOLUME: lite
+  CUSTOM_LOG4J_APPENDER_ERROR: org.apache.log4j.ConsoleAppender
+  CUSTOM_INDEXING_RECEIVER_MANAGER_POOL_SIZE: "1"
+  CUSTOM_MDM_TEXT_INDEXING_MODE: "OFFLINE"
+  CUSTOM_UPLOAD_FILE_SIZE: "52428800"
+  # uncomment the property below to redirect also MDM DEBUG logs to the stdout - only for troubleshooting
+  # CUSTOM_LOG4J_APPENDER_ELINK: org.apache.log4j.ConsoleAppender
+
+secret:
+  MQ_MDM_DB_USER: <db_mdm_user_base64_encoded>
+  MQ_MDM_DB_USER_PWD: <db_mdm_user_base64_encoded>
+  MQ_MDM_DB_ADMIN_USER: <db_admin_user_base64_encoded>
+  MQ_MDM_DB_ADMIN_USER_PWD: <db_admin_password_base64_encoded>
+  EMS_USER_NAME: <ems_user_base64_encoded>
+  EMS_PASSWORD: <ems_user_base64_encoded>
+  env_configurator_user: <configurator_user_base64_encoded>
+  env_configurator_password: <configurator_password_base64_encoded>
+
+psc:
+  deploy:
+    replicas: 1
+  containers:
+    ports:
+      fc: 8080
+      configurator: 6080
+      jgroupdefault: 7600
+      jgroupundertow: 8888
+      spi: 47100
+      rest: 11211
+      jmx: 49112
+      sql: 10800
+      thin: 10900
+    readiness:
+      enabled: true
+      initialDelaySeconds: 120
+      successThreshold: 1
+      failureThreshold: 3
+      periodSeconds: 30
+      timeoutSeconds: 30
+    liveness:
+      enabled: true
+      initialDelaySeconds: 210
+      successThreshold: 1
+      failureThreshold: 3
+      periodSeconds: 30
+      timeoutSeconds: 30
+    resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
+  service:
+    ports:
+      fc: 8080
+      configurator: 6080
+    type: ClusterIP
+
+ems:
+  image:
+    client:
+      repository: ems/ems-client
+      tag: 8.6.0
+
+image:
+  registry: eu.gcr.io/de-fo-gr-pr-shared/tibco
+  repository: psc/fc
+  pullPolicy: Always
+  tag: 5.0.0-EB20211012
+
+storage:
+  class:
+    name: psc-ssd
+  pvc:
+    create: true
+    accessMode: ReadWriteOnce
+    size: 100Gi
+
+serviceaccount:
+  name: psc-service-account

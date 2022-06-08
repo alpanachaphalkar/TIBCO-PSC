@@ -1,0 +1,6 @@
+
+if [[ $CONFIG_FLAG = "true" ]]
+then
+    source $JBOSS_HOME/bin/dynamic_config
+fi
+

@@ -1,0 +1,7 @@
+---
+apiVersion: v2
+appVersion: 5.0.0
+description: A Helm chart for deploying TIBCO PSC 5.0 to Kubernetes
+name: psc5
+type: application
+version: 0.3.1

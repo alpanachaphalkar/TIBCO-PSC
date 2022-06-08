@@ -1,0 +1,10 @@
+if [[ -f $MQ_HOME/config/ConfigLogin.info ]]
+then
+  echo "#"
+  echo "# START - Replacing place holders for file 'ConfigLogin.info'"
+  echo "#"
+  envsubst '${env_configurator_user} ${env_configurator_password}' <$MQ_HOME/config_template/ConfigLogin.info > $MQ_HOME/config/ConfigLogin.info
+  echo "#"
+  echo "# END - File: 'ConfigLogin.info'"
+  echo "#"
+fi

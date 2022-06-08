@@ -1,0 +1,4 @@
+#Admin Info
+#Mon Oct 16 15:19:52 IST 2006
+admin.password=${env_configurator_password}
+admin.username=${env_configurator_user}

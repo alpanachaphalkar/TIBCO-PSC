@@ -1,0 +1,17 @@
+{{ if .Values.storage.pvc.create }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.app.name }}-pvc
+  annotations:
+    "helm.sh/resource-policy": "keep"
+  labels:
+    {{- include "psc.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.storage.class.name }}
+  accessModes:
+  - {{ quote .Values.storage.pvc.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.storage.pvc.size }}
+{{ end }}

@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.name }}-deployment
+  labels:
+    {{- include "psc-ignite.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+    {{- include "psc-ignite.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{- include "psc-ignite.selectorLabels" . | nindent 8 }}
+      annotations:
+        traffic.sidecar.istio.io/excludeInboundPorts: "47100"
+        traffic.sidecar.istio.io/excludeOutboundPorts: "47100"
+        checksum/config: {{ include (print $.Template.BasePath "/psc_ignite_cm.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/psc_ignite_secret.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Values.serviceaccount.name }}
+      containers:
+      - image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        name: ignite
+        resources:
+          requests:
+            cpu: {{ .Values.ignite.containers.resources.requests.cpu }}
+            memory: {{ .Values.ignite.containers.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.ignite.containers.resources.limits.cpu }}
+            memory: {{ .Values.ignite.containers.resources.limits.memory }}
+        ports:
+        {{- range $key, $val := .Values.ignite.containers.ports }}
+          - name: {{ $key }}
+            containerPort: {{ $val }}
+        {{- end }}
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.app.name }}-config
+        - secretRef:
+            name: {{ .Values.app.name }}-secret
+        {{- if .Values.ignite.containers.readiness.enabled }}
+        readinessProbe:
+          httpGet:
+            path: "/ignite?cmd=version"
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: {{ .Values.ignite.containers.readiness.initialDelaySeconds }}
+          successThreshold: {{ .Values.ignite.containers.readiness.successThreshold }}
+          failureThreshold: {{ .Values.ignite.containers.readiness.failureThreshold }}
+          periodSeconds: {{ .Values.ignite.containers.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.ignite.containers.readiness.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.ignite.containers.liveness.enabled }}
+        livenessProbe:
+          httpGet:
+            path: "/ignite?cmd=version"
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: {{ .Values.ignite.containers.liveness.initialDelaySeconds }}
+          successThreshold: {{ .Values.ignite.containers.liveness.successThreshold }}
+          failureThreshold: {{ .Values.ignite.containers.liveness.failureThreshold }}
+          periodSeconds: {{ .Values.ignite.containers.liveness.periodSeconds }}  
+          timeoutSeconds: {{ .Values.ignite.containers.liveness.timeoutSeconds }}
+        {{- end }}
+      restartPolicy: Always

@@ -85,8 +85,12 @@ psc:
         memory: 4Gi
   service:
     ports:
-      fc: 8080
-      configurator: 6080
+      fc:
+        port: 8080
+        targetPort: 8080
+      configurator:
+        port: 6080
+        targetPort: 6080
     type: LoadBalancer
 
 image:

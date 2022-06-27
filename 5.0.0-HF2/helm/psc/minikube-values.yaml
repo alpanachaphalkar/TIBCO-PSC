@@ -3,10 +3,10 @@ app:
   version: 5.0.0
 environment: dev
 extraEnv:
-  CONFIG_FLAG: true
-  INIT_FLAG: false
-  env_ems_svc: ems-svc.ems.svc.cluster.local
-  env_ems_svc_port: 30722
+  CONFIG_FLAG: 'true'
+  INIT_FLAG: 'true'
+  env_ems_svc: ems-svc.psc-ems.svc.cluster.local
+  env_ems_svc_port: 7222
   MQ_NODE_TYPE: PSC_NODE
   MQ_INIT_MDM: 'true'
   MQ_INIT_JBOSS: 'true'
@@ -19,17 +19,18 @@ extraEnv:
   FC_START_CONFIG: 'true'
   MQ_MDM_DB_TYPE: POSTGRES
   MQ_MDM_DB_HOST: postgres.psc-db.svc.cluster.local
-  MQ_MDM_DB_PORT: 5432
+  MQ_MDM_DB_PORT: 5434
   MQ_MDM_DB_NAME: 'velodb'
   MQ_MDM_DB_SCHEMA: 'veloschema'
   MQ_MDM_DB_MIN_CONN_COUNT: 20
   MQ_MDM_DB_MAX_CONN_COUNT: 250
   MQ_MDM_DB_IGN_MIN_CONN_COUNT: 1
   MQ_MDM_DB_IGN_MAX_CONN_COUNT: 10
-  EMS_SERVER_URL: tcp://ems-svc.ems.svc.cluster.local:30722
-  FC_SERVICE_HOST: psc-svc.psc.svc.cluster.local
+  EMS_SERVER_URL: tcp://ems-svc.psc-ems.svc.cluster.local:7222
+  FC_SERVICE_HOST: 0.0.0.0
+  WEB_URL_HOST: http://localhost:8080
   FC_SERVICE_PORT: 8080
-  FC_SERVICE_FLAG: true
+  FC_SERVICE_FLAG: 'true'
   OPD_APP_DATA_VOLUME: lite
   CUSTOM_LOG4J_APPENDER_ERROR: org.apache.log4j.ConsoleAppender
   CUSTOM_INDEXING_RECEIVER_MANAGER_POOL_SIZE: "1"
@@ -97,7 +98,7 @@ image:
   registry: eu.gcr.io/de-fo-gr-pr-shared/tibco
   repository: psc/fc
   pullPolicy: Never
-  tag: 5.0.0-EB20211012
+  tag: 5.0.0-HF2
 
 serviceaccount:
   name: psc-service-account

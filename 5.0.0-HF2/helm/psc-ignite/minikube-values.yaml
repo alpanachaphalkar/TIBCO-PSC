@@ -7,7 +7,7 @@ extraEnv:
   MQ_ON_TROPOS: 'true'
   MQ_MDM_DB_TYPE: POSTGRES
   MQ_MDM_DB_HOST: postgres.psc-db.svc.cluster.local
-  MQ_MDM_DB_PORT: 5432
+  MQ_MDM_DB_PORT: 5434
   MQ_MDM_DB_NAME: 'velodb'
   MQ_MDM_DB_SCHEMA: 'veloschema'
   MQ_MDM_DB_IGN_MIN_CONN_COUNT: 1
@@ -60,9 +60,9 @@ ignite:
 
 image:
   registry: eu.gcr.io/de-fo-gr-pr-shared/tibco
-  repository: psc/ignite
+  repository: psc/ignite_p13
   pullPolicy: Never
-  tag: 1.9.0-EB20210922
+  tag: 5.0.0-HF2
 
 serviceaccount:
   name: psc-service-account

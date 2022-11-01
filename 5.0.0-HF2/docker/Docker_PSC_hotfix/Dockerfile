@@ -96,8 +96,8 @@ RUN mkdir -p $HOME/tmp/build && \
         echo '!'  >>applyHotFixInDocker.sh && \
         chmod -R 0700 ${MQ_HOME}/customEAR && \
         ./applyHotFixInDocker.sh && \
-	cp ${MQ_HOME}/customEAR/ECM.ear $MQ_HOME && \  
-	cp ${MQ_HOME}/customEAR/version.properties $MQ_HOME && \  
+	cp ${MQ_HOME}/customEAR/ECM.ear $MQ_HOME && \
+	cp ${MQ_HOME}/customEAR/version.properties $MQ_HOME && \
 	rm -rf ${MQ_HOME}/customEAR/* && \
 	tar -xvf /tmp/build/TIB_cim-ac_5.0.0_hotfix002.tar -C ${MQ_HOME}/customEAR && \
 	cd ${MQ_HOME}/customEAR && \
@@ -105,7 +105,7 @@ RUN mkdir -p $HOME/tmp/build && \
 	cd ${MQ_HOME}/customEAR/ac/5.0/bin && \
 	echo './ApplyHotFix.sh <<! '  >>applyHotFixInDocker1.sh && \
 	echo '!'  >>applyHotFixInDocker1.sh && \
-	chmod -R 0700 ${MQ_HOME}/customEAR/ac/5.0/ && \	
+	chmod -R 0700 ${MQ_HOME}/customEAR/ac/5.0/ && \
 	./applyHotFixInDocker1.sh
 	
 WORKDIR $HOME

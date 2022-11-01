@@ -64,6 +64,9 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
+RUN yum -y install python38u python38u-libs python38u-devel python38u-pip \
+    && python38 -V && python38 -m pip
+
 USER tibco
 WORKDIR ${USER_HOME}
 # EOF

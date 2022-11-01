@@ -37,9 +37,7 @@ ARG FC_VERSION=5.0.0
 ARG JAVA_VERSION_MAJOR=1.8.0
 ARG USER_HOME=/home/tibco
 
-RUN wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=11a1dmw_-yXrnWHis9hpdSMT1PWwooBLj' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=11a1dmw_-yXrnWHis9hpdSMT1PWwooBLj" -O TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip  \
-    && rm -rf /tmp/cookies.txt
-    # RUN gdown --id 11a1dmw_-yXrnWHis9hpdSMT1PWwooBLj --output TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip
+RUN gdown --id 11a1dmw_-yXrnWHis9hpdSMT1PWwooBLj --output TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip
 COPY TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip /tmp/build/
 
 ENV JAVA_HOME=/usr/lib/jvm/default-jvm 

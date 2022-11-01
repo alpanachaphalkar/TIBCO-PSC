@@ -64,8 +64,12 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN yum -y install python3 python3-pip \
-    && python3 -V && pip3 -V
+RUN yum -y install openssl-devel bzip2-devel libffi-devel \
+    && yum groupinstall "Development Tools" \
+    && wget https://www.python.org/ftp/python/3.11.0/Python-3.11.0a4.tgz \
+    && tar -xzf Python-3.11.0a4.tgz && cd Python-3.11.0a4 \
+    && ./configure --enable-optimizations && make altinstall\
+    && python3.11 -V && pip3 -V
 
 USER tibco
 WORKDIR ${USER_HOME}

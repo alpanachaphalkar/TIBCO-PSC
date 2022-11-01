@@ -64,13 +64,6 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN yum -y install rh-python38 python38-setuptools \
-    && scl enable rh-python38 bash \
-    && export PATH=$PATH:/usr/local/bin \
-    && curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
-    && python3 --version && python3 get-pip.py \
-    && pip -V
-
 USER tibco
 WORKDIR ${USER_HOME}
 # EOF

@@ -66,7 +66,7 @@ RUN set -ex; yum clean all && yum -y update \
 
 RUN yum -y install python38 python38-setuptools python38-pip \
     && easy_install-3.8 pip \
-    python3 -V && pip3 -V
+    && pip3 -V
 
 USER tibco
 WORKDIR ${USER_HOME}

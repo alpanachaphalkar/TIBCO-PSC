@@ -66,7 +66,7 @@ RUN set -ex; yum clean all && yum -y update \
 
 RUN yum -y install rh-python38 python38-setuptools && scl enable rh-python38 bash \
     && easy_install pip \
-    && python -V && pip -V
+    && python3 --version -V && pip -V
 
 USER tibco
 WORKDIR ${USER_HOME}

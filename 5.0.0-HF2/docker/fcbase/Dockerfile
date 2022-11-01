@@ -64,9 +64,10 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN yum -y install python34 python34-pip \
-    && python3 -V && pip3 -V \
-    && pip3 install gdown
+RUN cd /opt && wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz \
+    && tar xzf Python-3.8.12.tgz && cd Python-3.8.12 \
+    && ./configure --enable-optimizations && make altinstall \
+    && rm Python-3.8.12.tgz && python3.8 -V
 
 USER tibco
 WORKDIR ${USER_HOME}

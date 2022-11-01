@@ -5,6 +5,7 @@ build:
     context: 5.0.0-HF2/docker/fcbase
   fcignitebase:
     context: 5.0.0-HF2/docker/fc_ignite_base
+    dockerfile: Dockerfile
     depends_on: fcbase
   ignite_p13:
     context: 5.0.0-HF2/docker/Docker_PSC_hotfix/ignite

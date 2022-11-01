@@ -22,7 +22,7 @@
 # Pull base image
 # ---------------
 
-FROM registry.access.redhat.com/ubi7/python-38
+FROM registry.access.redhat.com/ubi7
 
 # Maintainer
 # ----------
@@ -64,8 +64,9 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN pip -V \
-    && pip install gdown
+RUN dnf -y install python38 \
+    && python -V && pip3 -V \
+    && pip3 install gdown
 
 USER tibco
 WORKDIR ${USER_HOME}

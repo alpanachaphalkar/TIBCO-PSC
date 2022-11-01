@@ -64,7 +64,7 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN makecache && yum -y install yum-utils \
+RUN yum makecache && yum -y install yum-utils \
     && yum -y install https://centos7.iuscommunity.org/ius-release.rpm \
     && yum makecache \
     && yum -y install python3 python3-pip \

@@ -65,7 +65,7 @@ RUN set -ex; yum clean all && yum -y update \
     && unset ANT_CONTRIB_VERSION
 
 RUN yum -y install openssl-devel bzip2-devel libffi-devel \
-    && yum groupinstall "Development Tools" \
+    && yum groups mark install \
     && wget https://www.python.org/ftp/python/3.11.0/Python-3.11.0a4.tgz \
     && tar -xzf Python-3.11.0a4.tgz && cd Python-3.11.0a4 \
     && ./configure --enable-optimizations && make altinstall\

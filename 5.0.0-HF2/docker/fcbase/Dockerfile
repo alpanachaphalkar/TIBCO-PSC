@@ -64,8 +64,8 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN yum install -y epel-release \
-    && yum install -y python3 python3-pip \
+RUN yum -y install epel-release \
+    && yum -y install python3 python3-pip \
     && python3 -V && pip3 -V
 
 USER tibco

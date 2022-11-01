@@ -32,7 +32,10 @@ build:
       MDM_HOTFIX_VERSION: "hotfix02"
       FC_HOTFIX_VERSION: "hotfix002"
 
-#deploy:
+deploy:
+  commands:
+    name: Deploy psc
+    command: echo "Deploy psc"
 #  commands:
 #    - name: Deploy PSC ignite
 #      command: helm upgrade --install psc-ignite -f 5.0.0-HF2/helm/psc-ignite/minikube-values.yaml 5.0.0-HF2/helm/psc-ignite

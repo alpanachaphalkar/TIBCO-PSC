@@ -45,7 +45,6 @@ RUN useradd -U tibco
 
 RUN set -ex; yum clean all && yum -y update \
     && yum -y install wget unzip zip nc openssl rsync gettext python38 python3-pip \
-    && pip install gdown \
     && cd /tmp \
     #&& curl -sS -o apache-ant-${ANT_VERSION}-bin.tar.gz http://www.us.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
     && wget http://www.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
@@ -63,7 +62,9 @@ RUN set -ex; yum clean all && yum -y update \
     && cp ant-contrib/ant-contrib-${ANT_CONTRIB_VERSION}.jar ${ANT_HOME}/lib/ant-contrib.jar \
     && rm -rf ant-contrib \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
-    && unset ANT_CONTRIB_VERSION
+    && unset ANT_CONTRIB_VERSION \
+
+RUN pip3 install gdown
 
 USER tibco
 WORKDIR ${USER_HOME}

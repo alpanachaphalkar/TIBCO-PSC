@@ -64,8 +64,8 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN yum -y install centos-release-scl rh-python38 && scl enable rh-python38 bash \
-    && python3 --version &&   \
+RUN yum -y install centos-release-scl rh-python38 rh-python38-pip && scl enable rh-python38 bash \
+    && python3 --version  \
     && pip -V && pip install gdown
 
 USER tibco

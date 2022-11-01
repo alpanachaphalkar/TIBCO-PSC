@@ -98,7 +98,7 @@ image:
   registry: eu.gcr.io/de-fo-gr-pr-shared/tibco
   repository: psc/fc
   pullPolicy: IfNotPresent
-  tag: 5.0.0-HF2
+  tag: 12.5.0
   imagePullSecrets: gcr-registry
 
 serviceaccount:

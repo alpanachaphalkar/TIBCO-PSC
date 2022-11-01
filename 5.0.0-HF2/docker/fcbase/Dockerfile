@@ -70,7 +70,7 @@ RUN yum -y install centos-release-scl rh-python38 rh-python38-pip && scl enable 
     && which python3 \
     && which gdown
 
-ENV PATH="/opt/rh/rh-python38/root/usr/bin/python3":${PATH}
+ENV PATH="/opt/rh/rh-python38/root/usr/local/bin/gdown":"/opt/rh/rh-python38/root/usr/bin/python3":${PATH}
 USER tibco
 WORKDIR ${USER_HOME}
 # EOF

@@ -5,7 +5,7 @@ environment: dev
 extraEnv:
   CONFIG_FLAG: 'true'
   INIT_FLAG: 'true'
-  env_ems_svc: ems-svc.psc-ems.svc.cluster.local
+  env_ems_svc: ems-svc.psc-ems-alpanachaphalkar.svc.cluster.local
   env_ems_svc_port: 7222
   MQ_NODE_TYPE: PSC_NODE
   MQ_INIT_MDM: 'true'
@@ -18,15 +18,15 @@ extraEnv:
   MQ_START_PATTERNS: 'false'
   FC_START_CONFIG: 'true'
   MQ_MDM_DB_TYPE: POSTGRES
-  MQ_MDM_DB_HOST: postgres.psc-db.svc.cluster.local
-  MQ_MDM_DB_PORT: 5434
+  MQ_MDM_DB_HOST: postgres.psc-db-alpanachaphalkar.svc.cluster.local
+  MQ_MDM_DB_PORT: 5432
   MQ_MDM_DB_NAME: 'velodb'
   MQ_MDM_DB_SCHEMA: 'veloschema'
   MQ_MDM_DB_MIN_CONN_COUNT: 20
   MQ_MDM_DB_MAX_CONN_COUNT: 250
   MQ_MDM_DB_IGN_MIN_CONN_COUNT: 1
   MQ_MDM_DB_IGN_MAX_CONN_COUNT: 10
-  EMS_SERVER_URL: tcp://ems-svc.psc-ems.svc.cluster.local:7222
+  EMS_SERVER_URL: tcp://ems-svc.psc-ems-alpanachaphalkar.svc.cluster.local:7222
   FC_SERVICE_HOST: 0.0.0.0
   WEB_URL_HOST: http://localhost:8080
   FC_SERVICE_PORT: 8080
@@ -97,8 +97,9 @@ psc:
 image:
   registry: eu.gcr.io/de-fo-gr-pr-shared/tibco
   repository: psc/fc
-  pullPolicy: Never
+  pullPolicy: IfNotPresent
   tag: 5.0.0-HF2
+  imagePullSecrets:
 
 serviceaccount:
   name: psc-service-account

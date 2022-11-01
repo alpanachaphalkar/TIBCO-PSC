@@ -20,6 +20,8 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/psc_ignite_cm.yaml") . | sha256sum }}
         checksum/config: {{ include (print $.Template.BasePath "/psc_ignite_secret.yaml") . | sha256sum }}
     spec:
+      imagePullSecrets:
+        - name: {{ .Values.image.imagePullSecrets }}
       serviceAccountName: {{ .Values.serviceaccount.name }}
       containers:
       - image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"

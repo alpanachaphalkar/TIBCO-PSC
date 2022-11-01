@@ -44,7 +44,7 @@ ENV PATH=${ANT_HOME}/bin:${PATH}
 RUN useradd -U tibco
 
 RUN set -ex; yum clean all && yum -y update \
-    && yum -y install wget unzip zip nc openssl rsync gettext rh-python35 rh-python35-python-pip \
+    && yum -y install wget unzip zip nc openssl rsync gettext python3 python3-pip \
     && cd /tmp \
     #&& curl -sS -o apache-ant-${ANT_VERSION}-bin.tar.gz http://www.us.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
     && wget http://www.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
@@ -64,8 +64,8 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN pip --version \
-    && pip install gdown
+RUN python3 -V && pip3 -V \
+    && pip3 install gdown
 
 USER tibco
 WORKDIR ${USER_HOME}

@@ -5,19 +5,32 @@ build:
     context: 5.0.0-HF2/docker/fcbase
   fcignitebase:
     context: 5.0.0-HF2/docker/fc_ignite_base
+    depends_on: fcbase
   ignite_p13:
     context: 5.0.0-HF2/docker/Docker_PSC_hotfix/ignite
+    depends_on: fcignitebase
     args:
       MDM_VERSION: "9.1.0"
       FC_VERSION: "5.0.0"
   fc:
     context: 5.0.0-HF2/docker/fc_multi_container
+    depends_on: fcbase
     args:
       MDM_VERSION: "9.1.0"
       MDM_MAJOR_VERSION: "9.1"
       FC_VERSION: "5.0.0"
       FC_MAJOR_VERSION: "5.0"
       MDM_HOTFIX_VERSION: "hotfix06"
+  fc_hf2:
+    context: 5.0.0-HF2/docker/Docker_PSC_hotfix/Dockerfile
+    depends_on: fc
+    args:
+      MDM_VERSION: "9.1.2"
+      MDM_MAJOR_VERSION: "9.1"
+      FC_VERSION: "5.0.0"
+      FC_MAJOR_VERSION: "5.0"
+      MDM_HOTFIX_VERSION: "hotfix02"
+      FC_HOTFIX_VERSION: "hotfix002"
 
 #deploy:
 #  commands:

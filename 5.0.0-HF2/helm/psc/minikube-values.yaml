@@ -27,7 +27,7 @@ extraEnv:
   MQ_MDM_DB_IGN_MIN_CONN_COUNT: 1
   MQ_MDM_DB_IGN_MAX_CONN_COUNT: 10
   EMS_SERVER_URL: tcp://ems-svc.psc-ems-alpanachaphalkar.svc.cluster.local:7222
-  FC_SERVICE_HOST: 0.0.0.0
+  FC_SERVICE_HOST: psc-svc.psc-alpanachaphalkar.svc.cluster.local
   WEB_URL_HOST: https://psc-svc-psc-alpanachaphalkar.cloud.okteto.net
   FC_SERVICE_PORT: 8080
   FC_SERVICE_FLAG: 'true'

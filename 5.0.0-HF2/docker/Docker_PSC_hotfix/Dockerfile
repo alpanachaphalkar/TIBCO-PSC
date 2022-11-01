@@ -72,6 +72,9 @@ ENV FC_MULTI_DEPLOY true
 
 USER root
 
+RUN gdown --id 1UOAqqq2YFFruzfBaWzmPkep8EKHq4ZGg --output TIB_CIM.9.1.2_JBOSSORA_hotfix02.tar \
+    && gdown --id 1xw8cG6Do2SUcSZZLmGcwUGk2rJN8ZxV_ --output TIB_cim-ac_5.0.0_hotfix002.tar
+
 COPY ["entry-point.sh", "TIB_CIM.9.1.2_JBOSSORA_hotfix02.tar", "TIB_cim-ac_5.0.0_hotfix002.tar","/tmp/build/"]
 
 USER postgres

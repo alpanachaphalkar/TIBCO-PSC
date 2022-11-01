@@ -45,7 +45,11 @@ ENV HOME ${USER_HOME}
 USER root
 
 RUN adduser igniteuser && \
-    mkdir -p /tmp/build/
+    mkdir -p /tmp/build/ \
+
+RUN gdown --id 11a1dmw_-yXrnWHis9hpdSMT1PWwooBLj --output TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip \
+    && gdown --id 1kYylkoJB1rK2xY_A62SE0MsSASyBSQbN --output TIB_mdm-JBOSS-PGRS_${MDM_VERSION}_linux_x86_64.zip \
+    && gdown --id 1zcKoxMpi1pqxeagpz0BYZu5NqhSPvZ44 --output apache-ignite-fabric-1.9.0-bin.zip
 
 COPY ["TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip","TIB_mdm-JBOSS-PGRS_${MDM_VERSION}_linux_x86_64.zip","entry-point.sh","apache-ignite-fabric-1.9.0-bin.zip","jars","/tmp/build/"]
 
@@ -82,7 +86,7 @@ RUN cd /tmp/build && \
     echo "fi" >> $HOME/apache-ignite-fabric-1.9.0-bin/bin/updateIgniteConf.sh && \
     echo "#!/bin/bash" > $HOME/apache-ignite-fabric-1.9.0-bin/bin/startIgnite.sh && \
     echo "cd \$HOME/apache-ignite-fabric-1.9.0-bin/bin" >> $HOME/apache-ignite-fabric-1.9.0-bin/bin/startIgnite.sh && \
-    echo "\$HOME/apache-ignite-fabric-1.9.0-bin/bin/updateIgniteConf.sh" >> $HOME/apache-ignite-fabric-1.9.0-bin/bin/startIgnite.sh && \    
+    echo "\$HOME/apache-ignite-fabric-1.9.0-bin/bin/updateIgniteConf.sh" >> $HOME/apache-ignite-fabric-1.9.0-bin/bin/startIgnite.sh && \
     echo "\$HOME/apache-ignite-fabric-1.9.0-bin/bin/ignite.sh" >> $HOME/apache-ignite-fabric-1.9.0-bin/bin/startIgnite.sh && \
     chmod -R 777 $HOME/apache-ignite-fabric-1.9.0-bin/bin && \
     export INGNITE_HOME=/home/igniteuser/apache-ignite-fabric-1.9.0-bin && \

@@ -51,6 +51,13 @@ ARG MDM_HOTFIX_VERSION=hotfix06
 
 USER root
 
+RUN gdown --id 1kYylkoJB1rK2xY_A62SE0MsSASyBSQbN --output TIB_mdm-JBOSS-PGRS_${MDM_VERSION}_linux_x86_64.zip \
+    && gdown --id 1jlU8Dsl5WWLQKob77c0d0zXYKBO7HzmQ --output TIB_CIM.${MDM_VERSION}_JBOSSORA_${MDM_HOTFIX_VERSION}.tar \
+    && gdown --id 10wPHLKLujHwP8XMYBgVMlnUgX391PjAU --output wildfly-10.1.0.Final.zip \
+    && gdown --id 11a1dmw_-yXrnWHis9hpdSMT1PWwooBLj --output TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip \
+    && gdown --id 1_DzhTu8K_4NANc6UoUc4kpsibEgsuUB- --output jdk-8u271-linux-x64.tar.gz \
+    && gdown --id 1w3raniGDnmBWMFzWSoAB1TfYWLlmBXld --output TIB_CIM.9.1.2_JBOSSORA_sp01.tar
+
 COPY ["entry-point.sh", "JBModules", "TIB_mdm-JBOSS-PGRS_${MDM_VERSION}_linux_x86_64.zip","TIB_CIM.${MDM_VERSION}_JBOSSORA_${MDM_HOTFIX_VERSION}.tar", "wildfly-10.1.0.Final.zip", "TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip","jdk-8u*-linux-x64.tar.gz","TIB_CIM.9.1.2_JBOSSORA_sp01.tar","/tmp/build/"]
 
 RUN set -ex; mkdir /home/postgres && \

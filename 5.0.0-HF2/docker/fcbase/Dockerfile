@@ -62,7 +62,7 @@ RUN set -ex; yum clean all && yum -y update \
     && cp ant-contrib/ant-contrib-${ANT_CONTRIB_VERSION}.jar ${ANT_HOME}/lib/ant-contrib.jar \
     && rm -rf ant-contrib \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
-    && unset ANT_CONTRIB_VERSION \
+    && unset ANT_CONTRIB_VERSION
 
 RUN pip --version \
     && pip install gdown

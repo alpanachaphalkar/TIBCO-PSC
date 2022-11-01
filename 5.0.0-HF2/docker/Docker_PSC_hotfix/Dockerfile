@@ -33,7 +33,7 @@
 #
 # ---------------
 
-FROM fc:5.0.0
+FROM registry.cloud.okteto.net/psc-alpanachaphalkar/tibco-psc-fc:okteto
 
 MAINTAINER Kameshwar Prasad <kprasad@tibco.com>
 

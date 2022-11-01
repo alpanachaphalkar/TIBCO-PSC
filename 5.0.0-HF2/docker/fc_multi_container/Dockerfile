@@ -35,7 +35,7 @@
 #
 # ---------------
 
-FROM fcbase:latest
+FROM registry.cloud.okteto.net/psc-alpanachaphalkar/tibco-psc-fcbase:okteto
 
 #MAINTAINER Kameshwar Prasad <kprasad@tibco.com>
 

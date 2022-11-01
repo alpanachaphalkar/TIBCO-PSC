@@ -32,7 +32,7 @@
 # Pull base image
 # ---------------
 
-FROM fcignitebase:latest
+FROM registry.cloud.okteto.net/psc-alpanachaphalkar/tibco-psc-fcignitebase:okteto
 
 MAINTAINER Manav Garg<mangarg@tibco.com>
 

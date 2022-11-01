@@ -27,7 +27,7 @@
 # Pull base image
 # ---------------
 
-FROM fcbase:latest
+FROM registry.cloud.okteto.net/psc-alpanachaphalkar/tibco-psc-fcbase:okteto
 
 # Maintainer
 # ----------

@@ -44,7 +44,7 @@ ENV PATH=${ANT_HOME}/bin:${PATH}
 RUN useradd -U tibco
 
 RUN set -ex; yum clean all && yum -y update \
-    && yum -y install wget unzip zip nc openssl rsync gettext gcc epel-release \
+    && yum -y install wget unzip zip nc openssl rsync gettext \
     && cd /tmp \
     #&& curl -sS -o apache-ant-${ANT_VERSION}-bin.tar.gz http://www.us.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
     && wget http://www.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
@@ -64,12 +64,9 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN yum -y groupinstall "Development Tools" \
-    && yum -y install openssl-devel bzip2-devel libffi-devel xz-devel \
-    && wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz \
-    && tar xvf Python-3.8.12.tgz && cd Python-3.8*/ \
-    && ./configure --enable-optimizations && make altinstall \
-    && python3.8 -V && pip3.8 --version
+RUN yum --enablerepo=extras install -y epel-release \
+    yum install -y python3 python3-pip \
+    && python3 -V && pip3 -V
 
 USER tibco
 WORKDIR ${USER_HOME}

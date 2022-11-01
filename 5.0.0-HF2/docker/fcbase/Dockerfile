@@ -64,9 +64,8 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN yum -y install python37-setuptools \
-    && easy_install-3.7 pip \
-    && pip3 -V
+RUN yum -y install epel-release python-pip \
+    && pip -V && pip install gdown
 
 USER tibco
 WORKDIR ${USER_HOME}

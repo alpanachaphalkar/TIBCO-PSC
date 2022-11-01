@@ -1,0 +1,245 @@
+{
+	"apiVersion": "apps/v1",
+	"kind": "Deployment",
+	"metadata": {
+		"name": "fc-ignite-deployment",
+		"namespace": "tibco-fc-500",
+		"labels": {
+			"app": "fc",
+			"tier": "ignite",
+			"version": "5.0.0",
+			"release": "stable",
+			"environment": "production"
+		}
+	},
+	"spec": {
+		"selector": {
+			"matchLabels": {
+				"app": "fc",
+				"tier": "ignite"
+			}
+		},
+		"strategy": {
+			"type": "Recreate"
+		},
+		"template": {
+			"metadata": {
+				"labels": {
+					"app": "fc",
+					"tier": "ignite"
+				}
+			},
+			"spec": {
+				"containers": [
+					{
+						"image": "<docker registry url for ignite image>",
+						"name": "ignite",
+						"resources": {
+			                "requests": {
+			                        "memory": "1024Mi",
+			                        "cpu": "100m"
+			                },
+			                "limits": {
+			                        "memory": "11000Mi",
+			                        "cpu": "500m"
+			                }
+						},
+						"ports": [
+							{
+								"containerPort": 47500,
+								"name": "ignite0"
+							},
+							{
+								"containerPort": 47501,
+								"name": "ignite1"
+							},
+							{
+								"containerPort": 47502,
+								"name": "ignite2"
+							},
+							{
+								"containerPort": 47503,
+								"name": "ignite3"
+							},
+							{
+								"containerPort": 47504,
+								"name": "ignite4"
+							},
+							{
+								"containerPort": 47505,
+								"name": "ignite5"
+							},
+							{
+								"containerPort": 47506,
+								"name": "ignite6"
+							},
+							{
+								"containerPort": 47507,
+								"name": "ignite7"
+							},
+							{
+								"containerPort": 47508,
+								"name": "ignite8"
+							},
+							{
+								"containerPort": 47509,
+								"name": "ignite9"
+							},
+							{
+								"containerPort": 47510,
+								"name": "ignite10"
+							},
+							{
+								"containerPort": 47100,
+                                "name": "spi"
+                            },
+                            {
+                                "containerPort": 11211,
+                                "name": "rest"
+                            },
+                            {
+								"containerPort": 49112,
+								"name": "jmx"
+                            },
+                            {
+								"containerPort": 10800,
+								"name": "sql"
+                            },
+                            {
+                                "containerPort": 10900,
+                                "name": "thin"
+                            }							
+						],
+						 "readinessProbe": {
+              "httpGet": {
+                "path": "/ignite?cmd=version",
+                "port": 8080,
+                "scheme": "HTTP"
+              },
+              "initialDelaySeconds": 5,
+              "successThreshold": 1,
+              "periodSeconds": 5
+            },
+						"env": [
+							{
+								"name": "POD_NAMESPACE",
+								"valueFrom": {
+									"fieldRef": {
+										"fieldPath": "metadata.namespace"
+									}
+								}
+							},
+							{
+								"name": "POD_IP",
+								"valueFrom": {
+									"fieldRef": {
+										"fieldPath": "status.podIP"
+									}
+								}
+							},
+							{
+								"name": "MQ_NODE_TYPE",
+								"value": "IGNITE_NODE"
+							},
+							{
+								"name": "MQ_ON_TROPOS",
+								"value": "true"
+							},
+							{
+								"name": "MQ_MDM_DB_TYPE",
+								"valueFrom": {
+									"configMapKeyRef": {
+										"name": "fc-config",
+										"key": "MQ_MDM_DB_TYPE"
+									}
+								}
+							},
+							{
+								"name": "MQ_MDM_DB_HOST",
+								"valueFrom": {
+									"configMapKeyRef": {
+										"name": "fc-config",
+										"key": "MQ_MDM_DB_HOST"
+									}
+								}
+							},
+							{
+								"name": "MQ_MDM_DB_PORT",
+								"valueFrom": {
+									"configMapKeyRef": {
+										"name": "fc-config",
+										"key": "MQ_MDM_DB_PORT"
+									}
+								}
+							},
+							{
+								"name": "MQ_MDM_DB_NAME",
+								"valueFrom": {
+									"configMapKeyRef": {
+										"name": "fc-config",
+										"key": "MQ_MDM_DB_NAME"
+									}
+								}
+							},
+							{
+								"name": "MQ_MDM_DB_USER",
+								"valueFrom": {
+									"secretKeyRef": {
+										"name": "fc-secret",
+										"key": "MQ_MDM_DB_USER"
+									}
+								}
+							},
+							{
+								"name": "MQ_MDM_DB_USER_PWD",
+								"valueFrom": {
+									"secretKeyRef": {
+										"name": "fc-secret",
+										"key": "MQ_MDM_DB_USER_PWD"
+									}
+								}
+							},
+							{
+								"name": "MQ_MDM_DB_SCHEMA",
+								"valueFrom": {
+									"configMapKeyRef": {
+										"name": "fc-config",
+										"key": "MQ_MDM_DB_SCHEMA"
+									}
+								}
+							},
+							{
+								"name": "MQ_MDM_DB_IGN_MIN_CONN_COUNT",
+								"valueFrom": {
+									"configMapKeyRef": {
+										"name": "fc-config",
+										"key": "MQ_MDM_DB_IGN_MIN_CONN_COUNT"
+									}
+								}
+							},
+							{
+								"name": "MQ_MDM_DB_IGN_MAX_CONN_COUNT",
+								"valueFrom": {
+									"configMapKeyRef": {
+										"name": "fc-config",
+										"key": "MQ_MDM_DB_IGN_MAX_CONN_COUNT"
+									}
+								}
+							}
+						]
+					}
+				],
+				"restartPolicy": "Always",
+				"imagePullSecrets": [
+				  {
+					"name": "name of registry credentials created to pull images"
+				  }
+				],
+				"securityContext": {
+					"runAsNonRoot": true,
+					"runAsUser": 101
+				}
+			}
+		}
+	}
+}

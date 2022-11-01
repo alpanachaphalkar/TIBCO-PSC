@@ -9,10 +9,10 @@
 # FC Ignite DOCKERFILES PROJECT
 # ---------------------------------------------------------
 # This is the Dockerfile for FC Ignite  App
-#
+# 
 # REQUIRED FILES TO BUILD THIS IMAGE
 # ----------------------------------
-# (1) TIB_mdm-JBOSS-PGRS_9.1.0_linux_x86_64.zip
+# (1) TIB_mdm-JBOSS-PGRS_9.1.0_linux_x86_64.zip 
 #		Download TIB_mdm-JBOSS-PGRS_9.1.0_linux_x86_64.zip from Tibco portal
 # (2) TIB_cim-ac_5.0.0_linux_x86_64.zip
 #		Download TIB_cim-ac_5.0.0_linux_x86_64.zip from Tibco portal
@@ -26,7 +26,7 @@
 # 1. If database is ORACLE then copy the database driver into the jars folder.
 # 2. Make sure that you have the fcignitebase:latest docker image built.
 # 3. Build the docker image using the command
-#	Run:
+#	Run: 
 #      $ docker build -t ignite_p13:1.9.0.latest --build-arg MDM_VERSION=9.1.0 --build-arg FC_VERSION=5.0.0 --rm=true .
 #
 # Pull base image
@@ -44,10 +44,10 @@ ENV HOME ${USER_HOME}
 
 USER root
 
-RUN useradd -m igniteuser && \
+RUN adduser igniteuser && \
     mkdir -p /tmp/build/
 
-COPY ["TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip","TIB_mdm-JBOSS-PGRS_${MDM_VERSION}_linux_x86_64.zip","entry-point.sh","apache-ignite-fabric-1.9.0-bin.zip","/tmp/build/"]
+COPY ["TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip","TIB_mdm-JBOSS-PGRS_${MDM_VERSION}_linux_x86_64.zip","entry-point.sh","apache-ignite-fabric-1.9.0-bin.zip","jars","/tmp/build/"]
 
 RUN chmod -R 777 /tmp
 
@@ -82,12 +82,12 @@ RUN cd /tmp/build && \
     echo "fi" >> $HOME/apache-ignite-fabric-1.9.0-bin/bin/updateIgniteConf.sh && \
     echo "#!/bin/bash" > $HOME/apache-ignite-fabric-1.9.0-bin/bin/startIgnite.sh && \
     echo "cd \$HOME/apache-ignite-fabric-1.9.0-bin/bin" >> $HOME/apache-ignite-fabric-1.9.0-bin/bin/startIgnite.sh && \
-    echo "\$HOME/apache-ignite-fabric-1.9.0-bin/bin/updateIgniteConf.sh" >> $HOME/apache-ignite-fabric-1.9.0-bin/bin/startIgnite.sh && \
+    echo "\$HOME/apache-ignite-fabric-1.9.0-bin/bin/updateIgniteConf.sh" >> $HOME/apache-ignite-fabric-1.9.0-bin/bin/startIgnite.sh && \    
     echo "\$HOME/apache-ignite-fabric-1.9.0-bin/bin/ignite.sh" >> $HOME/apache-ignite-fabric-1.9.0-bin/bin/startIgnite.sh && \
     chmod -R 777 $HOME/apache-ignite-fabric-1.9.0-bin/bin && \
     export INGNITE_HOME=/home/igniteuser/apache-ignite-fabric-1.9.0-bin && \
     rm -rf /tmp/build
-
+             
 EXPOSE 47500 47501 47502 47503 47504 47505 47506 47507 47508 47509 47510
 
 WORKDIR ${USER_HOME}

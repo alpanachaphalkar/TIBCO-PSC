@@ -88,8 +88,9 @@ RUN     set -ex; mkdir -p $HOME/tmp/build && \
         mkdir -p $HOME/jarutil && \
         tar xvzf /tmp/build/jdk-8u*-linux-x64.tar.gz -C $HOME/tmp/build && \
         mv $HOME/tmp/build/jdk1.8.0*/* $HOME/jarutil && \
-        unzip /tmp/build/TIB_mdm-JBOSS-PGRS_${MDM_VERSION}_linux_x86_64.zip -d $HOME/tmp/build && \
-        sed -i 's/<entry key="installationRoot">\/opt\/TIBCO<\/entry>/<entry key="installationRoot">\/home\/postgres\/tibco<\/entry>/' $HOME/tmp/build/TIBCOUniversalInstaller_cim_${MDM_VERSION}.silent && \
+        unzip /tmp/build/TIB_mdm-JBOSS-PGRS_${MDM_VERSION}_linux_x86_64.zip -d $HOME/tmp/build
+		
+RUN     sed -i 's/<entry key="installationRoot">\/opt\/TIBCO<\/entry>/<entry key="installationRoot">\/home\/postgres\/tibco<\/entry>/' $HOME/tmp/build/TIBCOUniversalInstaller_cim_${MDM_VERSION}.silent && \
         sed -i 's/<entry key="mdm.jboss.zipfile">\/opt\/tibco\/thirdpartyDownload\/wildfly-10.1.0.Final.zip<\/entry>/<entry key="mdm.jboss.zipfile">\/tmp\/build\/wildfly-10.1.0.Final.zip<\/entry>/' $HOME/tmp/build/TIBCOUniversalInstaller_cim_${MDM_VERSION}.silent && \
         sed -i 's/<entry key="LGPLAssemblyDownload">false<\/entry>/<entry key="LGPLAssemblyDownload">true<\/entry>/' $HOME/tmp/build/TIBCOUniversalInstaller_cim_${MDM_VERSION}.silent && \
         sed -i 's/<entry key="LGPLAssemblyPath">\/opt\/tibco\/thirdpartyDownload<\/entry>/<entry key="LGPLAssemblyPath">\/home\/postgres\/tmp\/build<\/entry>/' $HOME/tmp/build/TIBCOUniversalInstaller_cim_${MDM_VERSION}.silent && \
@@ -100,8 +101,8 @@ RUN     set -ex; mkdir -p $HOME/tmp/build && \
         sed -i '/<entry key="mdm.admin.password">password<\/entry>/d' $HOME/tmp/build/TIBCOUniversalInstaller_cim_${MDM_VERSION}.silent && \
         sed -i '/<entry key="mdm.template.type">template_name<\/entry>/d' $HOME/tmp/build/TIBCOUniversalInstaller_cim_${MDM_VERSION}.silent && \
         sed -i 's/${mdm.server.http.port}/6080/' $HOME/tmp/build/product_cim-jboss-pgrs_${MDM_VERSION}_FeatureConfig.xml && \
-        sed -i 's/${mdm.server.stop.port}/6009/' $HOME/tmp/build/product_cim-jboss-pgrs_${MDM_VERSION}_FeatureConfig.xml && \
-        $HOME/tmp/build/TIBCOUniversalInstaller-lnx-x86-64.bin -silent
+        sed -i 's/${mdm.server.stop.port}/6009/' $HOME/tmp/build/product_cim-jboss-pgrs_${MDM_VERSION}_FeatureConfig.xml
+RUN     $HOME/tmp/build/TIBCOUniversalInstaller-lnx-x86-64.bin -silent
 
 RUN     set -ex; rm -rf $HOME/tmp/build/* &&\
         mkdir -p ${MQ_HOME}/customEAR &&\
@@ -132,7 +133,7 @@ RUN     set -ex; rm -rf $HOME/tmp/build/* &&\
         echo '!'  >>applySPInDocker.sh && \
         chmod -R 0700 ${MQ_HOME}/customEAR && \
         ./applySPInDocker.sh && \
-        cp ${MQ_HOME}/customEAR/ECM.ear $MQ_HOME && \       
+        cp ${MQ_HOME}/customEAR/ECM.ear $MQ_HOME && \
         cd $HOME/tmp/build && \
         rm -rf $HOME/tmp/build/* && \
         unzip /tmp/build/TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip -d $HOME/tmp/build && \
@@ -152,8 +153,7 @@ ADD --chown=postgres:postgres config_template ${MQ_HOME}/config_template
 RUN     set -ex; head -n 1 ${JBOSS_HOME}/bin/StartMDMServer.sh > ${JBOSS_HOME}/bin/StartMDMServer_temp.sh && \
         cat ${JBOSS_HOME}/bin/snippet >> ${JBOSS_HOME}/bin/StartMDMServer_temp.sh && \
         tail -n +2 ${JBOSS_HOME}/bin/StartMDMServer.sh >> ${JBOSS_HOME}/bin/StartMDMServer_temp.sh && \
-        mv ${JBOSS_HOME}/bin/StartMDMServer_temp.sh ${JBOSS_HOME}/bin/StartMDMServer.sh && \
-        sed -i "s/\r//g" ${JBOSS_HOME}/bin/StartMDMServer.sh
+        mv ${JBOSS_HOME}/bin/StartMDMServer_temp.sh ${JBOSS_HOME}/bin/StartMDMServer.sh
 
 RUN     set -ex; chmod +rwx -R ${MQ_HOME}/config_template ${JBOSS_HOME}/bin/dynamic_config ${JBOSS_HOME}/bin/snippet ${JBOSS_HOME}/bin/StartMDMServer.sh && \
         sed -i 's/typeValue="Default\/LDAP"/typeValue="jwt"/' ${MQ_HOME}/config/ConfigValues.xml && \

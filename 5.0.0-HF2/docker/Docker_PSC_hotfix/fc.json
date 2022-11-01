@@ -1,0 +1,390 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "fc-deployment",
+    "namespace": "tibco-fc-500",
+    "labels": {
+      "app": "fc",
+      "tier": "fc-instance",
+      "version": "5.0.0",
+      "release": "stable",
+      "environment": "production"
+    }
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app": "fc",
+        "tier": "fc-instance"
+      }
+    },
+    "strategy": {
+      "type": "Recreate"
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "fc",
+          "tier": "fc-instance"
+        }
+      },
+      "spec": {
+        "initContainers": [
+          {
+            "name": "mq-common-dir-sync",
+            "image": "path",
+            "command": [
+              "rsync",
+              "-r",
+              "--ignore-existing",
+              "/home/postgres/tibco/mdm/9.1/common/",
+              "/data/common"
+            ],
+            "terminationMessagePath": "/tmp/my-log",
+            "volumeMounts": [
+              {
+                "name": "mq-storage",
+                "mountPath": "/data"
+              }
+            ]
+          },
+          {
+            "name": "mq-config-dir-sync",
+            "image": "path",
+            "command": [
+              "rsync",
+              "-r",
+              "--ignore-existing",
+              "/home/postgres/tibco/mdm/9.1/config/",
+              "/data/config"
+            ],
+            "terminationMessagePath": "/tmp/my-log",
+            "volumeMounts": [
+              {
+                "name": "mq-storage",
+                "mountPath": "/data"
+              }
+            ]
+          }
+        ],
+        "containers": [
+          {	
+			"name": "fc",
+			"image": "path",
+			"resources": {
+                "requests": {
+                        "memory": "2048Mi",
+                        "cpu": "1000m"
+                },
+                "limits": {
+                        "memory": "4096Mi",
+                        "cpu": "2000m"
+                }
+			},
+		    "ports": [
+              {
+                "containerPort": 8080,
+                "name": "fcport"
+              },
+              {
+                "containerPort": 7600,
+                "name": "jgroupdefault"
+              },
+              {
+                "containerPort": 8888,
+                "name": "jgroupundertow"
+              },
+			  {
+				"containerPort": 47100,
+                "name": "spi"
+              },
+              {
+				"containerPort": 11211,
+                "name": "rest"
+              },
+              {
+				"containerPort": 49112,
+				"name": "jmx"
+              },
+              {
+				"containerPort": 10800,
+				"name": "sql"
+              },
+              {
+                "containerPort": 10900,
+                "name": "thin"
+              }
+            ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/eml/rest/v1/status/jbossStatus",
+                "port": 8080,
+                "scheme": "HTTP"
+              },
+              "initialDelaySeconds": 5,
+              "successThreshold": 1,
+              "periodSeconds": 5
+            },
+            "env": [
+                {
+                  "name": "MQ_NODE_TYPE",
+                  "value": "IGNITE_NODE"
+                },
+                {
+                  "name": "MQ_MDM_DB_TYPE",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "MQ_MDM_DB_TYPE"
+                    }
+                  }
+                },
+                {
+                  "name": "MQ_MDM_DB_HOST",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "MQ_MDM_DB_HOST"
+                    }
+                  }
+                },
+				{
+                  "name": "FC_SERVICE_HOST",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "FC_SERVICE_HOST"
+                    }
+                  }
+                },
+				{
+                  "name": "WEB_URL_HOST",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "WEB_URL_HOST"
+                    }
+                  }
+                },
+				{
+                  "name": "FC_SERVICE_PORT",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "FC_SERVICE_PORT"
+                    }
+                  }
+                },
+				{
+                  "name": "FC_SERVICE_FLAG",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "FC_SERVICE_FLAG"
+                    }
+                  }
+                },
+				{
+                  "name": "CUSTOM_LOG4J_APPENDER_ELINK",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "CUSTOM_LOG4J_APPENDER_ELINK"
+                    }
+                  }
+                },
+				
+					{
+                  "name": "CUSTOM_LOG4J_APPENDER_ERROR",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "CUSTOM_LOG4J_APPENDER_ERROR"
+                    }
+                  }
+                },
+				
+                {
+                  "name": "MQ_MDM_DB_PORT",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "MQ_MDM_DB_PORT"
+                    }
+                  }
+                },
+                {
+                  "name": "MQ_MDM_DB_NAME",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "MQ_MDM_DB_NAME"
+                    }
+                  }
+                },
+                {
+                  "name": "MQ_MDM_DB_USER",
+                  "valueFrom": {
+                    "secretKeyRef": {
+                      "name": "fc-secret",
+                      "key": "MQ_MDM_DB_USER"
+                    }
+                  }
+                },
+                {
+                  "name": "MQ_MDM_DB_USER_PWD",
+                  "valueFrom": {
+                    "secretKeyRef": {
+                      "name": "fc-secret",
+                      "key": "MQ_MDM_DB_USER_PWD"
+                    }
+                  }
+                },
+                {
+                  "name": "MQ_MDM_DB_SCHEMA",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "MQ_MDM_DB_SCHEMA"
+                    }
+                  }
+                },
+                {
+                  "name": "MQ_MDM_DB_IGN_MIN_CONN_COUNT",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "MQ_MDM_DB_IGN_MIN_CONN_COUNT"
+                    }
+                  }
+                },
+                {
+                  "name": "MQ_MDM_DB_IGN_MAX_CONN_COUNT",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "MQ_MDM_DB_IGN_MAX_CONN_COUNT"
+                    }
+                  }
+                },
+                {
+                  "name": "MQ_INIT_MDM",
+                  "value": "true"
+                },
+                {
+                  "name": "MQ_INIT_JBOSS",
+                  "value": "true"
+                },
+				{
+                  "name": "FC_MULTI_DEPLOY",
+                  "value": "true"
+                },
+                {
+                  "name": "MQ_START_MDM",
+                  "value": "true"
+                },
+                {
+                  "name": "EMS_SERVER_URL",
+                  "valueFrom": {
+                    "configMapKeyRef": {
+                      "name": "fc-config",
+                      "key": "EMS_SERVER_URL"
+                    }
+                  }
+                },
+                {
+                  "name": "EMS_USER_NAME",
+                  "valueFrom": {
+                    "secretKeyRef": {
+                      "name": "fc-secret",
+                      "key": "EMS_USER_NAME"
+                    }
+                  }
+                },
+                {
+                  "name": "EMS_PASSWORD",
+                  "valueFrom": {
+                    "secretKeyRef": {
+                      "name": "fc-secret",
+                      "key": "EMS_PASSWORD"
+                    }
+                  }
+                },
+                {
+                  "name": "MQ_ON_TROPOS",
+                  "value": "true"
+                },
+                {
+                  "name": "MQ_ALL_IN_ONE_MODE",
+                  "value": "false"
+                },
+                {
+                  "name": "FC_START_OPD",
+                  "value": "false"
+                },
+                {
+                  "name": "MQ_START_PATTERNS",
+                  "value": "false"
+                },
+                {
+                  "name": "FC_START_CONFIG",
+                  "value": "true"
+                },
+              {
+                "name": "POD_NAME",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.name"
+                  }
+                }
+              },
+              {
+                "name": "POD_NAMESPACE",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.namespace"
+                  }
+                }
+              },
+              {
+                "name": "POD_IP",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "status.podIP"
+                  }
+                }
+              }
+            ],
+            "volumeMounts": [
+              {
+                "name": "mq-storage",
+                "mountPath": "/home/postgres/tibco/mdm/9.1/common",
+                "subPath": "common"
+              },
+              {
+                "name": "mq-storage",
+                "mountPath": "/home/postgres/tibco/mdm/9.1/config",
+                "subPath": "config"
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "mq-storage",
+            "persistentVolumeClaim": {
+              "claimName": "fc-pv-claim"
+            }
+          }
+        ],
+        "restartPolicy": "Always",
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 70
+        }
+      }
+    }
+  }
+}

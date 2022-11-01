@@ -1,0 +1,12 @@
+<module xmlns="urn:jboss:module:1.0" name="com.tibco.mdm">
+<resources>
+<!--resource-root path="tibcrypt.jar"/-->
+<resource-root path="tibjms.jar"/>
+<!-- Insert resources here -->
+</resources>
+<dependencies>
+<!-- Insert dependencies here -->
+<module name="javax.api"/>
+<module name="javax.jms.api"/>
+</dependencies>
+</module>

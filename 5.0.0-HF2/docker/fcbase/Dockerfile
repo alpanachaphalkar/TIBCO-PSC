@@ -56,8 +56,8 @@ RUN set -ex; yum clean all && yum -y update \
     && rm -rf ${ANT_HOME}/manual \
     && unset ANT_VERSION \
     && cd /tmp \
-    #&& curl -sS -o ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip http://kent.dl.sourceforge.net/project/ant-contrib/ant-contrib/${ANT_CONTRIB_VERSION}/ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
-    && wget http://kent.dl.sourceforge.net/project/ant-contrib/ant-contrib/${ANT_CONTRIB_VERSION}/ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
+    #&& curl -sS -o ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip https://sourceforge.net/projects/ant-contrib/files/ant-contrib/${ANT_CONTRIB_VERSION}/ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
+    && wget https://sourceforge.net/projects/ant-contrib/files/ant-contrib/${ANT_CONTRIB_VERSION}/ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unzip ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip -d /tmp/ \
     && cp ant-contrib/ant-contrib-${ANT_CONTRIB_VERSION}.jar ${ANT_HOME}/lib/ant-contrib.jar \
     && rm -rf ant-contrib \

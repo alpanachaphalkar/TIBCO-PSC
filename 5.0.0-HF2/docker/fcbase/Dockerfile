@@ -64,8 +64,8 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN yum -y install python38 python38-setuptools python38-pip \
-    && easy_install-3.8 pip \
+RUN yum -y install python37-setuptools \
+    && easy_install-3.7 pip \
     && pip3 -V
 
 USER tibco

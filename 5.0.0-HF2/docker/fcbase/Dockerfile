@@ -64,7 +64,7 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN python3 -V && pip3 -V \
+RUN python -V && pip3 -V \
     && pip3 install gdown
 
 USER tibco

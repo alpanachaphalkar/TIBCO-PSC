@@ -44,7 +44,7 @@ ENV PATH=${ANT_HOME}/bin:${PATH}
 RUN useradd -U tibco
 
 RUN set -ex; yum clean all && yum -y update \
-    && yum -y install wget unzip zip nc openssl rsync gettext python38 python3-pip \
+    && yum -y install wget unzip zip nc openssl rsync gettext python3 python3-devel python3-pip \
     && cd /tmp \
     #&& curl -sS -o apache-ant-${ANT_VERSION}-bin.tar.gz http://www.us.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
     && wget http://www.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \

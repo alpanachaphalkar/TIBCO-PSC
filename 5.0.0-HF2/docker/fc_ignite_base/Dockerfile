@@ -37,7 +37,7 @@ ARG FC_VERSION=5.0.0
 ARG JAVA_VERSION_MAJOR=1.8.0
 ARG USER_HOME=/home/tibco
 
-RUN gdown --id 11a1dmw_-yXrnWHis9hpdSMT1PWwooBLj --output TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip
+RUN /opt/rh/rh-python38/root/usr/local/bin/gdown --id 11a1dmw_-yXrnWHis9hpdSMT1PWwooBLj --output TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip
 COPY TIB_cim-ac_${FC_VERSION}_linux_x86_64.zip /tmp/build/
 
 ENV JAVA_HOME=/usr/lib/jvm/default-jvm 

@@ -65,7 +65,7 @@ RUN set -ex; yum clean all && yum -y update \
     && unset ANT_CONTRIB_VERSION
 
 RUN yum -y install rh-python38 && scl enable rh-python38 bash \
-    && python3 -V && pip -V
+    && python3.8 -V && pip -V
 
 USER tibco
 WORKDIR ${USER_HOME}

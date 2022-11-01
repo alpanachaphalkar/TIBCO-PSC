@@ -99,7 +99,7 @@ image:
   repository: psc/fc
   pullPolicy: IfNotPresent
   tag: 5.0.0-HF2
-  imagePullSecrets:
+  imagePullSecrets: gcr-registry
 
 serviceaccount:
   name: psc-service-account

@@ -63,7 +63,7 @@ image:
   repository: psc/ignite_p13
   pullPolicy: IfNotPresent
   tag: 5.0.0-HF2
-  imagePullSecrets:
+  imagePullSecrets: gcr-registry
 
 serviceaccount:
   name: psc-service-account

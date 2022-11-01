@@ -1,8 +1,27 @@
 name: tibco
 
-deploy:
-  commands:
-    - name: Deploy PSC ignite
-      command: helm upgrade --install psc-ignite -f 5.0.0-HF2/helm/psc-ignite/minikube-values.yaml 5.0.0-HF2/helm/psc-ignite
-    - name: Deploy PSC
-      command: helm upgrade --install psc -f 5.0.0-HF2/helm/psc/minikube-values.yaml 5.0.0-HF2/helm/psc
+build:
+  fcbase:
+    context: 5.0.0-HF2/docker/fcbase
+  fcignitebase:
+    context: 5.0.0-HF2/docker/fc_ignite_base
+  ignite_p13:
+    context: 5.0.0-HF2/docker/Docker_PSC_hotfix/ignite
+    args:
+      MDM_VERSION: "9.1.0"
+      FC_VERSION: "5.0.0"
+  fc:
+    context: 5.0.0-HF2/docker/fc_multi_container
+    args:
+      MDM_VERSION: "9.1.0"
+      MDM_MAJOR_VERSION: "9.1"
+      FC_VERSION: "5.0.0"
+      FC_MAJOR_VERSION: "5.0"
+      MDM_HOTFIX_VERSION: "hotfix06"
+
+#deploy:
+#  commands:
+#    - name: Deploy PSC ignite
+#      command: helm upgrade --install psc-ignite -f 5.0.0-HF2/helm/psc-ignite/minikube-values.yaml 5.0.0-HF2/helm/psc-ignite
+#    - name: Deploy PSC
+#      command: helm upgrade --install psc -f 5.0.0-HF2/helm/psc/minikube-values.yaml 5.0.0-HF2/helm/psc

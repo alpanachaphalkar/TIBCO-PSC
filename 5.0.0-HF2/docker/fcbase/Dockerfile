@@ -64,7 +64,7 @@ RUN set -ex; yum clean all && yum -y update \
     && rm ant-contrib-${ANT_CONTRIB_VERSION}-bin.zip \
     && unset ANT_CONTRIB_VERSION
 
-RUN yum -y install python38 python38-pip \
+RUN yum -y install python34 python34-pip \
     && python3 -V && pip3 -V \
     && pip3 install gdown
 

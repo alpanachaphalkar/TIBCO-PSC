@@ -42,7 +42,7 @@ ignite:
         memory: 2Gi
       limits:
         cpu: 1
-        memory: 4Gi
+        memory: 6Gi
     readiness:
       enabled: true
       initialDelaySeconds: 30
@@ -59,10 +59,10 @@ ignite:
       timeoutSeconds: 30
 
 image:
-  registry: eu.gcr.io/de-fo-gr-pr-shared/tibco
-  repository: psc/ignite_p13
+  registry: eu.gcr.io/de-fo-gr-pr-shared/tibco/psc/test
+  repository: ignite_p13
   pullPolicy: IfNotPresent
-  tag: 12.5.0
+  tag: 5.0.0-HF2
   imagePullSecrets: gcr-registry
 
 serviceaccount:

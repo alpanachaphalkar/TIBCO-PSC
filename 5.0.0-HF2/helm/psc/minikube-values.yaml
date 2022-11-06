@@ -83,7 +83,7 @@ psc:
         memory: 2Gi
       limits:
         cpu: 2
-        memory: 4Gi
+        memory: 6Gi
   service:
     ports:
       fc:
@@ -95,10 +95,10 @@ psc:
     type: LoadBalancer
 
 image:
-  registry: eu.gcr.io/de-fo-gr-pr-shared/tibco
-  repository: psc/fc
+  registry: eu.gcr.io/de-fo-gr-pr-shared/tibco/psc/test
+  repository: fc
   pullPolicy: IfNotPresent
-  tag: 12.5.0
+  tag: 5.0.0-HF2
   imagePullSecrets: gcr-registry
 
 serviceaccount:

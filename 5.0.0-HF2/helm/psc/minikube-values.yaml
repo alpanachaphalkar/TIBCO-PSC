@@ -3,8 +3,8 @@ app:
   version: 5.0.0
 environment: dev
 extraEnv:
-  CONFIG_FLAG: 'true'
-  INIT_FLAG: 'true'
+  CONFIG_FLAG: true
+  INIT_FLAG: false
   env_ems_svc: ems-svc.psc-ems-alpanachaphalkar.svc.cluster.local
   env_ems_svc_port: 7222
   MQ_NODE_TYPE: PSC_NODE
@@ -20,8 +20,8 @@ extraEnv:
   MQ_MDM_DB_TYPE: POSTGRES
   MQ_MDM_DB_HOST: postgres.psc-db-alpanachaphalkar.svc.cluster.local
   MQ_MDM_DB_PORT: 5432
-  MQ_MDM_DB_NAME: 'velodb'
-  MQ_MDM_DB_SCHEMA: 'veloschema'
+  MQ_MDM_DB_NAME: velodb
+  MQ_MDM_DB_SCHEMA: veloschema
   MQ_MDM_DB_MIN_CONN_COUNT: 20
   MQ_MDM_DB_MAX_CONN_COUNT: 250
   MQ_MDM_DB_IGN_MIN_CONN_COUNT: 1
@@ -30,12 +30,13 @@ extraEnv:
   FC_SERVICE_HOST: psc-svc.psc-alpanachaphalkar.svc.cluster.local
   WEB_URL_HOST: https://psc-svc-psc-alpanachaphalkar.cloud.okteto.net
   FC_SERVICE_PORT: 8080
-  FC_SERVICE_FLAG: 'true'
+  FC_SERVICE_FLAG: true
   OPD_APP_DATA_VOLUME: lite
   CUSTOM_LOG4J_APPENDER_ERROR: org.apache.log4j.ConsoleAppender
   CUSTOM_INDEXING_RECEIVER_MANAGER_POOL_SIZE: "1"
   CUSTOM_MDM_TEXT_INDEXING_MODE: "OFFLINE"
   CUSTOM_UPLOAD_FILE_SIZE: "52428800"
+  CUSTOM_PASSWORD_EXPIRATION_PERIOD: "0"
   # uncomment the property below to redirect also MDM DEBUG logs to the stdout - only for troubleshooting
   # CUSTOM_LOG4J_APPENDER_ELINK: org.apache.log4j.ConsoleAppender
 
@@ -86,12 +87,8 @@ psc:
         memory: 6Gi
   service:
     ports:
-      fc:
-        port: 8080
-        targetPort: 8080
-      configurator:
-        port: 6080
-        targetPort: 6080
+      fc: 8080
+      configurator: 6080
     type: LoadBalancer
 
 image:

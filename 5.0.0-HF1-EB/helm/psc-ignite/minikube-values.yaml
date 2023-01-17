@@ -61,7 +61,7 @@ ignite:
 image:
   registry: eu.gcr.io/de-fo-gr-pr-shared/tibco
   repository: psc/ignite
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: 1.9.0-EB20210922
   imagePullSecrets: gcr-registry
 

@@ -94,7 +94,7 @@ psc:
 image:
   registry: eu.gcr.io/de-fo-gr-pr-shared/tibco
   repository: psc/fc
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: 5.0.0-EB20211012
   imagePullSecrets: gcr-registry
 

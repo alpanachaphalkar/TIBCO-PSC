@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app.name }}-svc
+  {{- if eq .Values.psc.service.type "LoadBalancer" }}
+  annotations:
+    networking.gke.io/load-balancer-type: "Internal"
+  {{- end }}
+  labels:
+    {{- include "psc.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "psc.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.psc.service.type }}
+  ports:
+  - name: http-fc
+    protocol: TCP
+    port: {{ .Values.psc.service.ports.fc | default "8080" }}
+    targetPort: {{ .Values.psc.containers.ports.fc | default "8080" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app.name }}-configurator-svc
+  {{- if eq .Values.psc.service.type "LoadBalancer" }}
+  annotations:
+    networking.gke.io/load-balancer-type: "Internal"
+  {{- end }}
+  labels:
+    {{- include "psc.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "psc.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.psc.service.type }}
+  sessionAffinity: ClientIP
+  ports:
+  - name: http-configurator
+    protocol: TCP
+    port: {{ default "6080" .Values.psc.service.ports.configurator }}
+    targetPort: {{ default "6080" .Values.psc.containers.ports.configurator }}

@@ -1,0 +1,68 @@
+app:
+  name: psc-ignite
+  version: 5.0.0
+environment: dev
+extraEnv:
+  MQ_NODE_TYPE: IGNITE_NODE
+  MQ_ON_TROPOS: 'true'
+  MQ_MDM_DB_TYPE: POSTGRES
+  MQ_MDM_DB_HOST: postgres.psc-db-alpanachaphalkar.svc.cluster.local
+  MQ_MDM_DB_PORT: 5432
+  MQ_MDM_DB_NAME: 'velodb'
+  MQ_MDM_DB_SCHEMA: 'veloschema'
+  MQ_MDM_DB_IGN_MIN_CONN_COUNT: 1
+  MQ_MDM_DB_IGN_MAX_CONN_COUNT: 10
+
+secret:
+  MQ_MDM_DB_USER: bWRtdXNlcg==
+  MQ_MDM_DB_USER_PWD: bWRtcGFzc3dvcmQ=
+
+ignite:
+  containers:
+    ports:
+      ignite0: 47500
+      ignite1: 47501
+      ignite2: 47502
+      ignite3: 47503
+      ignite4: 47504
+      ignite5: 47505
+      ignite6: 47506
+      ignite7: 47507
+      ignite8: 47508
+      ignite9: 47509
+      ignite10: 47510
+      spi: 47100
+      rest: 11211
+      jmx: 49112
+      sql: 10800
+      thin: 10900
+    resources:
+      requests:
+        cpu: 0.5
+        memory: 2Gi
+      limits:
+        cpu: 1
+        memory: 6Gi
+    readiness:
+      enabled: true
+      initialDelaySeconds: 30
+      successThreshold: 1
+      failureThreshold: 3
+      periodSeconds: 15
+      timeoutSeconds: 30
+    liveness:
+      enabled: true
+      initialDelaySeconds: 60
+      successThreshold: 1
+      failureThreshold: 3
+      periodSeconds: 15
+      timeoutSeconds: 30
+
+image:
+  registry: eu.gcr.io/de-fo-gr-pr-shared/tibco
+  repository: psc/ignite
+  pullPolicy: IfNotPresent
+  tag: 1.9.0-EB20210922
+
+serviceaccount:
+  name: psc-service-account

@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.name }}-deployment
+  labels:
+    {{- include "psc.labels" . | nindent 4 }}
+spec:
+  replicas: {{.Values.psc.deploy.replicas}}
+  selector:
+    matchLabels:
+       {{- include "psc.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "psc.selectorLabels" . | nindent 8 }}
+      annotations:
+        traffic.sidecar.istio.io/excludeInboundPorts: "47100"
+        traffic.sidecar.istio.io/excludeOutboundPorts: "47100"
+        checksum/config: {{ include (print $.Template.BasePath "/psc_cm.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/psc_secret.yaml") . | sha256sum }}
+    spec:
+      {{- if .Values.image.imagePullSecrets }}
+      imagePullSecrets:
+        - name: {{ .Values.image.imagePullSecrets }}
+      {{- end }}
+      serviceAccountName: {{ .Values.serviceaccount.name }}
+      initContainers:
+      - name: volume-mount-hack
+        image: busybox:latest
+        command: ["sh", "-c", "chmod -R 777 /data"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsUser: 0
+        volumeMounts:
+        - name: mq-storage
+          mountPath: /data
+      - name: mq-common-dir-sync
+        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command:
+        - rsync
+        - "-r"
+        - "--ignore-existing"
+        - "/home/postgres/tibco/mdm/9.1/common/"
+        - "/data/common"
+        terminationMessagePath: "/tmp/my-log"
+        volumeMounts:
+        - name: mq-storage
+          mountPath: "/data"
+      - name: mq-config-dir-sync
+        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command:
+        - rsync
+        - "-r"
+        - "--ignore-existing"
+        - "/home/postgres/tibco/mdm/9.1/config/"
+        - "/data/config"
+        terminationMessagePath: "/tmp/my-log"
+        volumeMounts:
+        - name: mq-storage
+          mountPath: "/data"
+      containers:
+      - name: fc
+        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        resources:
+          requests:
+            cpu: {{ .Values.psc.containers.resources.requests.cpu }}
+            memory: {{ .Values.psc.containers.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.psc.containers.resources.limits.cpu }}
+            memory: {{ .Values.psc.containers.resources.limits.memory }}
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.app.name }}-config
+        - secretRef:
+            name: {{ .Values.app.name }}-secret
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        ports:
+        {{- range $key, $val := .Values.psc.containers.ports }}
+          - name: {{ $key }}
+            containerPort: {{ $val }}
+        {{- end }}
+        {{- if .Values.psc.containers.readiness.enabled }}
+        readinessProbe:
+          httpGet:
+            path: "/eml/rest/base/jbossStatus"
+            port: 8080
+          initialDelaySeconds: {{ .Values.psc.containers.readiness.initialDelaySeconds }}
+          successThreshold: {{ .Values.psc.containers.readiness.successThreshold }}
+          failureThreshold: {{ .Values.psc.containers.readiness.failureThreshold }}
+          periodSeconds: {{ .Values.psc.containers.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.psc.containers.readiness.timeoutSeconds }}
+        {{ end }}
+        {{- if .Values.psc.containers.liveness.enabled }}
+        livenessProbe:
+          httpGet:
+            path: "/eml/rest/base/noOp"
+            port: 8080
+          initialDelaySeconds: {{ .Values.psc.containers.liveness.initialDelaySeconds }}
+          successThreshold: {{ .Values.psc.containers.liveness.successThreshold }}
+          failureThreshold: {{ .Values.psc.containers.liveness.failureThreshold }}
+          periodSeconds: {{ .Values.psc.containers.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.psc.containers.liveness.timeoutSeconds }}
+        {{ end }}
+        volumeMounts:
+        - name: mq-storage
+          mountPath: "/home/postgres/tibco/mdm/9.1/common"
+          subPath: common
+        - name: mq-storage
+          mountPath: "/home/postgres/tibco/mdm/9.1/config"
+          subPath: config
+      restartPolicy: Always
+      volumes:
+      - name: mq-storage
+        persistentVolumeClaim:
+          claimName: mq-storage-pvc

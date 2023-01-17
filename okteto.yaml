@@ -1,8 +1,12 @@
 name: tibco
 
+privateRegistry:
+  gcr:
+    url: https://eu.gcr.io
+    token: $GCP_AUTH_TOKEN
 deploy:
   commands:
     - name: Deploy PSC ignite
-      command: helm upgrade --install psc-ignite -f 5.0.0-HF2/helm/psc-ignite/minikube-values.yaml 5.0.0-HF2/helm/psc-ignite
+      command: helm upgrade --install psc-ignite -f 5.0.0-HF1-EB/helm/psc-ignite/minikube-values.yaml 5.0.0-HF1-EB/helm/psc-ignite
     - name: Deploy PSC
-      command: helm upgrade --install psc -f 5.0.0-HF2/helm/psc/minikube-values.yaml 5.0.0-HF2/helm/psc
+      command: helm upgrade --install psc -f 5.0.0-HF1-EB/helm/psc/minikube-values.yaml 5.0.0-HF1-EB/helm/psc

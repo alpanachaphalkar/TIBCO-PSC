@@ -95,7 +95,7 @@ spec:
         {{- if .Values.psc.containers.readiness.enabled }}
         readinessProbe:
           httpGet:
-            path: "/eml/rest/base/jbossStatus"
+            path: "/eml/rest/v1/status/jbossStatus"
             port: 8080
           initialDelaySeconds: {{ .Values.psc.containers.readiness.initialDelaySeconds }}
           successThreshold: {{ .Values.psc.containers.readiness.successThreshold }}
@@ -106,7 +106,7 @@ spec:
         {{- if .Values.psc.containers.liveness.enabled }}
         livenessProbe:
           httpGet:
-            path: "/eml/rest/base/noOp"
+            path: "/eml/rest/v1/status/jbossStatus"
             port: 8080
           initialDelaySeconds: {{ .Values.psc.containers.liveness.initialDelaySeconds }}
           successThreshold: {{ .Values.psc.containers.liveness.successThreshold }}

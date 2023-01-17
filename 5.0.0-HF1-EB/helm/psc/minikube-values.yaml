@@ -96,6 +96,7 @@ image:
   repository: psc/fc
   pullPolicy: IfNotPresent
   tag: 5.0.0-EB20211012
+  imagePullSecrets: gcr-registry
 
 serviceaccount:
   name: psc-service-account

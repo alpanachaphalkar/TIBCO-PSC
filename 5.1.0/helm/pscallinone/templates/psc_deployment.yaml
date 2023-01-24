@@ -19,16 +19,16 @@ spec:
       serviceAccountName: {{ .Values.app.name }}-sa
 {{/*      imagePullSecrets:*/}}
 {{/*        - name: {{ .Values.psc.image.imagePullSecrets }}*/}}
-      initContainers:
-        - name: volume-mount-hack
-          image: eu.gcr.io/de-fo-gr-pr-shared/docker-base-images/system/tools:2.6.0
-          command: ["sh", "-c", "chmod -R 777 {{ .Values.storage.volumeMount.path }}"]
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsUser: 0
-          volumeMounts:
-            - mountPath: {{ .Values.storage.volumeMount.path }}
-              name: {{ .Values.storage.name }}
+{{/*      initContainers:*/}}
+{{/*        - name: volume-mount-hack*/}}
+{{/*          image: eu.gcr.io/de-fo-gr-pr-shared/docker-base-images/system/tools:2.6.0*/}}
+{{/*          command: ["sh", "-c", "chmod -R 777 {{ .Values.storage.volumeMount.path }}"]*/}}
+{{/*          securityContext:*/}}
+{{/*            allowPrivilegeEscalation: false*/}}
+{{/*            runAsUser: 0*/}}
+{{/*          volumeMounts:*/}}
+{{/*            - mountPath: {{ .Values.storage.volumeMount.path }}*/}}
+{{/*              name: {{ .Values.storage.name }}*/}}
       containers:
         - name: {{ .Values.app.name }}-container
           image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
@@ -56,10 +56,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          volumeMounts:
-            - mountPath: /home/tibco/mdm/9.3
-              name: {{ .Values.storage.name }}
-      volumes:
-        - name: {{ .Values.storage.name }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.storage.name }}-pvc
+{{/*          volumeMounts:*/}}
+{{/*            - mountPath: /home/tibco/mdm/9.3*/}}
+{{/*              name: {{ .Values.storage.name }}*/}}
+{{/*      volumes:*/}}
+{{/*        - name: {{ .Values.storage.name }}*/}}
+{{/*          persistentVolumeClaim:*/}}
+{{/*            claimName: {{ .Values.storage.name }}-pvc*/}}

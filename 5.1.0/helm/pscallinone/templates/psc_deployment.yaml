@@ -100,13 +100,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.psc.readinessProbe.httpPath }}
-              port: {{ .Values.psc.readinessProbe.httpPort }}
-            initialDelaySeconds: 300
-            periodSeconds: 10
-            successThreshold: 1
           volumeMounts:
             - mountPath: /home/tibco/mdm/9.3/common
               name: {{ .Values.storage.name }}

@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.name }}-deployment
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "psc.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.psc.deploy.replicas }}
+  selector:
+    matchLabels:
+      {{-include "psc.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{-include "psc.selectorLabels" . | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: 60
+      serviceAccountName: {{ .Values.app.name }}-sa
+      imagePullSecrets:
+        - name: {{ .Values.psc.image.imagePullSecrets }}
+      initContainers:
+        - name: volume-mount-hack
+          image: eu.gcr.io/de-fo-gr-pr-shared/docker-base-images/system/tools:2.6.0
+          command: ["sh", "-c", "chmod -R 777 /data"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 0
+          volumeMounts:
+            - mountPath: {{ .Values.storage.volumeMount.path }}
+              name: {{ .Values.storage.name }}
+        - name: mq-config-dir-sync
+          image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
+          imagePullPolicy: {{ .Values.psc.image.pullPolicy }}
+          command:
+            - rsync
+            - "-r"
+            - "--ignore-existing"
+            - "/home/tibco/mdm/9.3/config/"
+            - "/tmp/config"
+          volumeMounts:
+            - mountPath: {{ .Values.storage.volumeMount.path }}
+              name: {{ .Values.storage.name }}
+        - name: mq-common-dir-sync
+          image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
+          command:
+            - rsync
+            - "-r"
+            - "--ignore-existing"
+            - "/home/tibco/mdm/9.3/common/"
+            - "/tmp/common"
+          volumeMounts:
+            - mountPath: {{ .Values.storage.volumeMount.path }}
+              name: {{ .Values.storage.pvc.storage }}
+        - name: mq-dynservices-dir-sync
+          image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
+          command:
+            - rsync
+            - "-ru"
+            - "/home/tibco/mdm/9.3/dynservices/"
+            - "/tmp/dynservices"
+          volumeMounts:
+            - mountPath: {{ .Values.storage.volumeMount.path }}
+              name: {{ .Values.storage.name }}
+        - name: mq-hotfixes-dir-sync
+          image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
+          command:
+            - rsync
+            - "-r"
+            - "--ignore-existing"
+            - "/home/tibco/mdm/9.3/hotfixes/"
+            - "/tmp/hotfixes"
+          volumeMounts:
+            - mountPath: {{ .Values.storage.volumeMount.path }}
+              name: {{ .Values.storage.name }}
+      containers:
+        - name: {{ .Values.app.name }}-container
+          image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
+          imagePullPolicy: {{ .Values.psc.image.pullPolicy }}
+          resources:
+            requests:
+              memory: {{ .Values.psc.resources.requests.memory }}
+              cpu: {{ .Values.psc.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.psc.resources.limits.memory }}
+              cpu: {{ .Values.psc.resources.limits.cpu }}
+          ports:
+            - containerPort: {{ .Values.psc.container.ports.pscui }}
+            - containerPort: {{ .Values.psc.container.ports.config }}
+            - containerPort: {{ .Values.psc.container.ports.opd }}
+            - containerPort: 7600
+            - containerPort: 47500
+            - containerPort: 48500
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.psc.readinessProbe.httpPath }}
+              port: {{ .Values.psc.readinessProbe.httpPort }}
+            initialDelaySeconds: 300
+            periodSeconds: 10
+            successThreshold: 1
+          volumeMounts:
+            - mountPath: /home/tibco/mdm/9.3/common
+              name: {{ .Values.storage.name }}
+              subPathExpr: common
+            - mountPath: /home/tibco/mdm/9.3/config
+              name: {{ .Values.storage.name }}
+              subPathExpr: config
+            - mountPath: /home/tibco/mdm/9.3/dynservices
+              name: {{ .Values.storage.name }}
+              subPathExpr: dynservices
+            - mountPath: /home/tibco/mdm/9.3/hotfixes
+              name: {{ .Values.storage.name }}
+              subPathExpr: hotfixes
+      volumes:
+        - name: {{ .Values.storage.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.storage.name }}-pvc

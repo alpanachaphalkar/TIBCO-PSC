@@ -1,0 +1,42 @@
+app:
+  name: psc
+  version: 5.1.0
+environment: dev
+
+psc:
+  deploy:
+    replicas: 1
+  image:
+    registry: eu.gcr.io/de-fo-gr-pr-shared/tibco/psc
+    repository: test/psc-all-in-one
+    tag: 5.1.0
+    pullPolicy: IfNotPresent
+    imagePullSecrets: gcr-registry
+  container:
+    ports:
+      pscui: 8080
+      config: 6080
+      opd: 8070
+  service:
+    type: LoadBalancer
+    ports:
+      pscui: 8080
+      config: 6080
+      opd: 8070
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1000m"
+    limits:
+      memory: "3Gi"
+      cpu: "2000m"
+  readinessProbe:
+    httpPath: /eml/rest/base/jbossStatus
+    httpPort: 8080
+
+storage:
+  name: mq-storage
+  pvc:
+    storage: 10Gi
+  volumeMount:
+    path: /data

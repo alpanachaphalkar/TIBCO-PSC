@@ -1,0 +1,6 @@
+name: tibco
+
+deploy:
+  commands:
+    - name: Deploy PSC
+      command: helm upgrade --install psc --timeout 12m0s -f 5.1.0/helm/pscallinone/values.yaml 5.1.0/helm/pscallinone

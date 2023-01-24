@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+appVersion: 5.1.0
+description: A Helm chart for deploying TIBCO PSC 5.1.0 to Kubernetes
+name: pscallinone
+type: application
+version: 0.3.1

@@ -29,50 +29,6 @@ spec:
           volumeMounts:
             - mountPath: {{ .Values.storage.volumeMount.path }}
               name: {{ .Values.storage.name }}
-        - name: mq-config-dir-sync
-          image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
-          imagePullPolicy: {{ .Values.psc.image.pullPolicy }}
-          command:
-            - rsync
-            - "-r"
-            - "--ignore-existing"
-            - "/home/tibco/mdm/9.3/config/"
-            - "/tmp/config"
-          volumeMounts:
-            - mountPath: {{ .Values.storage.volumeMount.path }}
-              name: {{ .Values.storage.name }}
-        - name: mq-common-dir-sync
-          image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
-          command:
-            - rsync
-            - "-r"
-            - "--ignore-existing"
-            - "/home/tibco/mdm/9.3/common/"
-            - "/tmp/common"
-          volumeMounts:
-            - mountPath: {{ .Values.storage.volumeMount.path }}
-              name: {{ .Values.storage.name }}
-        - name: mq-dynservices-dir-sync
-          image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
-          command:
-            - rsync
-            - "-ru"
-            - "/home/tibco/mdm/9.3/dynservices/"
-            - "/tmp/dynservices"
-          volumeMounts:
-            - mountPath: {{ .Values.storage.volumeMount.path }}
-              name: {{ .Values.storage.name }}
-        - name: mq-hotfixes-dir-sync
-          image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
-          command:
-            - rsync
-            - "-r"
-            - "--ignore-existing"
-            - "/home/tibco/mdm/9.3/hotfixes/"
-            - "/tmp/hotfixes"
-          volumeMounts:
-            - mountPath: {{ .Values.storage.volumeMount.path }}
-              name: {{ .Values.storage.name }}
       containers:
         - name: {{ .Values.app.name }}-container
           image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
@@ -101,18 +57,8 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
           volumeMounts:
-            - mountPath: /home/tibco/mdm/9.3/common
+            - mountPath: /home/tibco/mdm/9.3
               name: {{ .Values.storage.name }}
-              subPathExpr: common
-            - mountPath: /home/tibco/mdm/9.3/config
-              name: {{ .Values.storage.name }}
-              subPathExpr: config
-            - mountPath: /home/tibco/mdm/9.3/dynservices
-              name: {{ .Values.storage.name }}
-              subPathExpr: dynservices
-            - mountPath: /home/tibco/mdm/9.3/hotfixes
-              name: {{ .Values.storage.name }}
-              subPathExpr: hotfixes
       volumes:
         - name: {{ .Values.storage.name }}
           persistentVolumeClaim:

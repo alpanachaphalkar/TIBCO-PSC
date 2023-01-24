@@ -18,7 +18,7 @@ psc:
       config: 6080
       opd: 8070
   service:
-    type: LoadBalancer
+    type: ClusterIP
     ports:
       pscui: 8080
       config: 6080
@@ -39,4 +39,4 @@ storage:
   pvc:
     storage: 10Gi
   volumeMount:
-    path: /data
+    path: /home/tibco

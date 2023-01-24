@@ -51,7 +51,7 @@ spec:
             - "/tmp/common"
           volumeMounts:
             - mountPath: {{ .Values.storage.volumeMount.path }}
-              name: {{ .Values.storage.pvc.storage }}
+              name: {{ .Values.storage.name }}
         - name: mq-dynservices-dir-sync
           image: "{{ .Values.psc.image.registry }}/{{ .Values.psc.image.repository }}:{{ .Values.psc.image.tag }}"
           command:

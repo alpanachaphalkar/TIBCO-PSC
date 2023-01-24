@@ -9,11 +9,11 @@ spec:
   replicas: {{ .Values.psc.deploy.replicas }}
   selector:
     matchLabels:
-      {{-include "psc.selectorLabels" . | nindent 6 }}
+      {{- include "psc.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{-include "psc.selectorLabels" . | nindent 8 }}
+        {{- include "psc.selectorLabels" . | nindent 8 }}
     spec:
       terminationGracePeriodSeconds: 60
       serviceAccountName: {{ .Values.app.name }}-sa

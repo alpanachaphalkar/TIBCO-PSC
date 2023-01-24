@@ -28,8 +28,8 @@ psc:
       memory: "2Gi"
       cpu: "1000m"
     limits:
-      memory: "3Gi"
-      cpu: "2000m"
+      memory: "4Gi"
+      cpu: "2500m"
   readinessProbe:
     httpPath: /eml/rest/base/jbossStatus
     httpPort: 8080
